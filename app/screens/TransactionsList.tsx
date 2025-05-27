@@ -28,7 +28,7 @@ const TransactionsList = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://192.168.0.109:8080/api/transactions/wallet/${selectedWalletId}`
+        `http://localhost:8080/api/transactions/wallet/${selectedWalletId}`
       );
       if (response.ok) {
         const data = await response.json();

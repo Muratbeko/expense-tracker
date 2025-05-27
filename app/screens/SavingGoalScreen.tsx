@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/services/config';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,7 +9,6 @@ import {
   FlatList,
   Image,
   Modal,
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -17,11 +17,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-  
-  const API_BASE_URL = Platform.OS === 'web' 
-    ? 'http://localhost:8080' 
-    : 'http://192.168.0.109:8080';
-  
+    
   interface SavingGoal {
     id: number;
     name: string;

@@ -5,15 +5,15 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface Category {
@@ -40,7 +40,7 @@ const NewExpense = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://192.168.0.109:8080/api/categories/expense', {
+      const response = await fetch('http://localhost:8080/api/categories/expense', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ const NewExpense = () => {
 
     try {
       setLoading(true);
-      const response = await fetch('http://192.168.0.109:8080/api/transactions', {
+      const response = await fetch('http://localhost:8080/api/transactions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

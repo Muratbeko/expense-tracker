@@ -10,6 +10,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -44,7 +45,7 @@ const NewIncome = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://192.168.0.109:8081/api/categories/income');
+      const response = await fetch('http://localhost:8080/api/categories/income');
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -90,7 +91,7 @@ const NewIncome = () => {
         type: 'INCOME'
       };
 
-      const response = await fetch('http://192.168.0.109:8081/api/transactions', {
+      const response = await fetch('http://localhost:8080/api/transactions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -181,7 +182,35 @@ const NewIncome = () => {
               <Typo size={16}>{format(date, 'MMMM dd, yyyy')}</Typo>
               <Ionicons name="calendar" size={20} color={colors.primary} />
             </TouchableOpacity>
-            {showDatePicker && (
+            {showDatePicker && Platform.OS === 'ios' && (
+              <Modal
+                transparent={true}
+                animationType="slide"
+                visible={showDatePicker}
+                onRequestClose={() => setShowDatePicker(false)}
+              >
+                <View style={styles.modalContainer}>
+                  <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                      <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                        <Typo>Cancel</Typo>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                        <Typo>Done</Typo>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={date}
+                      mode="date"
+                      display="spinner"
+                      onChange={handleDateChange}
+                      maximumDate={new Date()}
+                    />
+                  </View>
+                </View>
+              </Modal>
+            )}
+            {showDatePicker && Platform.OS === 'android' && (
               <DateTimePicker
                 value={date}
                 mode="date"
@@ -280,5 +309,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 15,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
 });

@@ -1,13 +1,10 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Для iOS/Android используем Picker из @react-native-picker/picker
 import { Picker } from '@react-native-picker/picker';
-
-const API_BASE_URL = Platform.OS === 'web'
-  ? 'http://localhost:8080'
-  : 'http://192.168.0.109:8080';
+import { API_BASE_URL } from '../config/api';
 
 export default function TopUpModal({ visible, onClose, goal, onSuccess }) {
   const [wallets, setWallets] = useState([]);

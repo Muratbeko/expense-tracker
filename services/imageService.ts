@@ -1,4 +1,4 @@
-const API_URL = 'http://192.168.0.109:8080/api/users';
+const API_URL = 'http://localhost:8080/api/users';
 
 export const fetchUserProfile = async (email: string) => {
   const response = await fetch(`${API_URL}/me?email=${email}`, {

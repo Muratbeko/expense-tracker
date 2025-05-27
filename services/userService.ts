@@ -1,6 +1,6 @@
 // services/userService.ts
 
-const API_URL = 'http://192.168.0.109:8080/api/users';  // Замените на ваш API URL
+const API_URL = 'http://localhost:8080/api/users';  // Замените на ваш API URL
 
 export const fetchUserProfile = async (email: string) => {
   try {

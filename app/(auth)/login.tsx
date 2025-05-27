@@ -1,133 +1,151 @@
-import Input from '@/components/input'
-import ScreenWrapper from '@/components/ScreenWrapper'
-import Typo from '@/components/Typo'
-import { colors, radius, spacingX, spacingY } from '@/constants/theme'
-import { useAuth } from '@/contexts/AuthContext'
-import { verticalScale } from '@/utils/styling'
-import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
-const Login = () => {
-  const { login } = useAuth()
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+const LoginScreen = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const router = useRouter();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields')
-      return
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
     }
 
     try {
-      setLoading(true)
-      await login(email, password)
-      router.replace('/(tabs)')
-    } catch (error) {
-      Alert.alert('Error', 'Invalid email or password')
+      setLoading(true);
+      console.log('Login screen: Starting login');
+      
+      await login(email.trim(), password);
+      
+      console.log('Login screen: Login successful, navigating');
+      router.replace('/(tabs)/index');
+    } catch (error: any) {
+      console.error('Login screen error:', error);
+      Alert.alert('Login Failed', error.message || 'Please try again');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <ScreenWrapper>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Typo size={32} fontWeight="700">
-            Welcome Back
-          </Typo>
-          <Typo size={16} color={colors.neutral400}>
-            Sign in to continue
-          </Typo>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Typo size={16} color={colors.neutral400}>
-              Email
-            </Typo>
-            <Input
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Typo size={16} color={colors.neutral400}>
-              Password
-            </Typo>
-            <Input
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Typo size={16} color={colors.white} fontWeight="600">
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Typo>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.registerLink}
-            onPress={() => router.push('/(auth)/register')}
-          >
-            <Typo size={14} color={colors.neutral400}>
-              Don't have an account?{' '}
-            </Typo>
-            <Typo size={14} color={colors.primary} fontWeight="600">
-              Sign Up
-            </Typo>
-          </TouchableOpacity>
-        </View>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.form}>
+        <Text style={styles.title}>Welcome Back</Text>
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        
+        <TouchableOpacity 
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.buttonText}>Login</Text>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          onPress={() => router.push('/(auth)/register')}
+          style={styles.linkButton}
+        >
+          <Text style={styles.linkText}>Don't have an account? Register</Text>
+        </TouchableOpacity>
       </View>
-    </ScreenWrapper>
-  )
-}
-
-export default Login
+    </KeyboardAvoidingView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: spacingX._20,
-  },
-  header: {
-    marginTop: verticalScale(60),
-    gap: spacingY._10,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
   },
   form: {
-    marginTop: verticalScale(40),
-    gap: spacingY._20,
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  inputContainer: {
-    gap: spacingY._10,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    fontSize: 16,
   },
   button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacingY._15,
-    borderRadius: radius._15,
+    backgroundColor: '#5E35B1',
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: spacingY._10,
+    marginTop: 10,
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
-  registerLink: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacingY._20,
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-})
+  linkButton: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  linkText: {
+    color: '#5E35B1',
+    fontSize: 14,
+  },
+});
+
+export default LoginScreen;

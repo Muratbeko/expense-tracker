@@ -2,13 +2,11 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
-import { Stack, Tabs } from 'expo-router';
+import { Stack, Tabs, router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { API_BASE_URL } from '../config/api';
 
-const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8080' 
-  : 'http://192.168.0.109:8080';
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -48,7 +46,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   }, [unreadCount]);
 
   const handleNotificationsPress = () => {
-    navigation.navigate('notifications');
+    router.push('/notifications');
     // Обнуляем счетчик после нажатия на уведомления (опционально)
     setTimeout(() => {
       loadUnreadCount();
@@ -127,13 +125,13 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       }}>
         <TouchableOpacity 
           style={{ flex: 1, alignItems: 'center' }}
-          onPress={() => { setFabOpen(false); navigation.navigate('index'); }}
+          onPress={() => { setFabOpen(false); router.push('/'); }}
         >
           <Ionicons name="home" size={24} color={state.index === 0 ? '#5E35B1' : '#757575'} />
         </TouchableOpacity>
         <TouchableOpacity 
           style={{ flex: 1, alignItems: 'center' }}
-          onPress={() => { setFabOpen(false); navigation.navigate('wallet'); }}
+          onPress={() => { setFabOpen(false); router.push('/wallet'); }}
         >
           <Ionicons name="wallet" size={24} color={state.index === 1 ? '#5E35B1' : '#757575'} />
         </TouchableOpacity>
@@ -142,7 +140,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           {/* Микрофон */}
           <Animated.View style={getCircleStyle(angles[0])} pointerEvents={fabOpen ? 'auto' : 'none'}>
             <TouchableOpacity
-              onPress={() => { setFabOpen(false); navigation.navigate('screens/VoiceTransactionScreen'); }}
+              onPress={() => { 
+                setFabOpen(false); 
+                router.push('/voice-transaction');
+              }}
               style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#5E35B1', justifyContent: 'center', alignItems: 'center', elevation: 6 }}
               activeOpacity={0.8}
             >
@@ -152,7 +153,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           {/* Фото */}
           <Animated.View style={getCircleStyle(angles[1])} pointerEvents={fabOpen ? 'auto' : 'none'}>
             <TouchableOpacity
-              onPress={() => { setFabOpen(false); Alert.alert('Фото', 'Функция добавления фото'); }}
+              onPress={() => { 
+                setFabOpen(false); 
+                router.push('/receipt-scanner');
+              }}
               style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#5E35B1', justifyContent: 'center', alignItems: 'center', elevation: 6 }}
               activeOpacity={0.8}
             >
@@ -162,7 +166,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           {/* Ввод вручную */}
           <Animated.View style={getCircleStyle(angles[2])} pointerEvents={fabOpen ? 'auto' : 'none'}>
             <TouchableOpacity
-              onPress={() => { setFabOpen(false); navigation.navigate('index', { openAddModal: true }); }}
+              onPress={() => { 
+                setFabOpen(false); 
+                router.push('/?openAddModal=true');
+              }}
               style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#5E35B1', justifyContent: 'center', alignItems: 'center', elevation: 6 }}
               activeOpacity={0.8}
             >
@@ -170,26 +177,26 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             </TouchableOpacity>
           </Animated.View>
           {/* Кнопка плюс/крестик */}
-          <TouchableOpacity
+        <TouchableOpacity 
             onPress={toggleFab}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: '#5E35B1',
-              justifyContent: 'center',
-              alignItems: 'center',
+          style={{ 
+            width: 56, 
+            height: 56, 
+            borderRadius: 28, 
+            backgroundColor: '#5E35B1',
+            justifyContent: 'center',
+            alignItems: 'center',
               elevation: 8,
-              shadowColor: '#5E35B1',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
+            shadowColor: '#5E35B1',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
               zIndex: 3,
-            }}
+          }}
             activeOpacity={0.85}
-          >
+        >
             <Ionicons name={fabOpen ? 'close' : 'add'} size={28} color="white" />
-          </TouchableOpacity>
+        </TouchableOpacity>
         </View>
         <TouchableOpacity 
           style={{ flex: 1, alignItems: 'center', position: 'relative' }}
@@ -223,7 +230,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         </TouchableOpacity>
         <TouchableOpacity 
           style={{ flex: 1, alignItems: 'center' }}
-          onPress={() => { setFabOpen(false); navigation.navigate('profile'); }}
+          onPress={() => { setFabOpen(false); router.push('/profile'); }}
         >
           <Ionicons name="person" size={24} color={state.index === 3 ? '#5E35B1' : '#757575'} />
         </TouchableOpacity>
@@ -257,6 +264,14 @@ export default function TabLayout() {
             title: 'Home',
             headerShown: false,
             tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="monthly-report"
+          options={{
+            title: 'Reports',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <Ionicons name="bar-chart" size={24} color={color} />,
           }}
         />
         <Tabs.Screen

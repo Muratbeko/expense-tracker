@@ -2,11 +2,8 @@ import type { Budget } from '@/types';
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
 
-const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8080' 
-  : 'http://192.168.0.109:8080';
+import { API_BASE_URL } from '../config/api';
 
 interface BudgetNotificationProps {
   budget: Budget;

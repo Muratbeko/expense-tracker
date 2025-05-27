@@ -1,30 +1,29 @@
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
-  imageUrl?: string;
 }
 
 export interface Transaction {
   id: string;
-  type: TransactionType;
   amount: number;
-  description: string;
+  type: 'income' | 'expense';
   category: string;
+  description: string;
   date: string;
-  userId: string;
-  walletId: string;
+  userId: number;
 }
 
 // export type TransactionType = 'INCOME' | 'EXPENSE';
 
 export interface Budget {
   id: number;
-  month: string;
-  year: number;
-  total: number;
-  spent: number;
-  categories: BudgetCategory[];
+  amount: number;
+  category: string;
+  period: 'daily' | 'weekly' | 'monthly';
+  startDate: string;
+  endDate: string;
+  userId: number;
 }
 
 export interface BudgetCategory {
@@ -36,9 +35,9 @@ export interface BudgetCategory {
 
 export interface ApiResponse<T> {
   data: T;
-  message: string;
-  status: number;
-} 
+  message?: string;
+  error?: string;
+}
 
 // types/index.ts
 export interface TransactionType {
@@ -51,29 +50,24 @@ export interface TransactionType {
 }
 
 export interface SavingGoal {
-  id?: number;
-  name: string;
-  currentAmount: number;
-  targetAmount: number;
-  createdAt?: string;
-}
-
-export interface Budget {
   id: number;
-  month: string;
-  year: number;
-  total: number;
-  spent: number;
-  categories: Array<{
-    id: number;
-    name: string;
-    budget: number;
-    spent: number;
-  }>;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate: string;
+  userId: number;
 }
 
 export interface AccountBalance {
   balance: number;
-  income: number;
-  expenses: number;
+  currency: string;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  type: 'income' | 'expense';
+  icon?: string;
+  color?: string;
+  userId: number;
 }

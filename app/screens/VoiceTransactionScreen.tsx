@@ -7,8 +7,8 @@ import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const GOOGLE_SPEECH_API_KEY = 'AIzaSyBcdfgbh_EqtQ1LG_MhBfSgSY1CxJtxp50';
-const GEMINI_API_KEY = 'AIzaSyAaWQqV5XTUPLXCtFpHoBA4ZkbdSLgHe_E';
+const GOOGLE_SPEECH_API_KEY = 'AIzaSyCrb5mXO0QP0KII3Fh7D42Tqs_Vph9SD0g';
+const GEMINI_API_KEY = 'AIzaSyCrb5mXO0QP0KII3Fh7D42Tqs_Vph9SD0g';
 
 const askGemini = async (text: string) => {
   const prompt = `Extract transaction details from: "${text}".\nReturn JSON with fields: amount, currency, category, description, type (INCOME or EXPENSE), date (ISO).\nExample: {"amount":14,"currency":"USD","category":"Groceries","description":"Grocery shopping","type":"EXPENSE","date":"2024-06-07"}`;

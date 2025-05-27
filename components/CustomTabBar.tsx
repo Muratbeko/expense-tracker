@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/app/config/api';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import axios from 'axios';
@@ -5,9 +6,7 @@ import { Stack, Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 
-const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8080' 
-  : 'http://192.168.0.109:8080';
+
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const [unreadCount, setUnreadCount] = useState(0);

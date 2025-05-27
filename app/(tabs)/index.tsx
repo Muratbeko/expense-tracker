@@ -1,4 +1,6 @@
+
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -8,7 +10,6 @@ import { NotificationProvider } from '@/contexts/NotificationContext';
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -23,14 +24,18 @@ import { EditBudgetModal } from '../(modals)/EditBudgetModal';
 import type { TransactionType } from '../../types';
 import { BudgetNotification } from '../components/BudgetNotification';
 import TopUpModal from '../components/TopUpModal';
+import { API_BASE_URL } from '../config/api';
 
-// API configuration with timeout
-const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8080' 
-  : 'http://192.168.0.109:8080';
 
-// Configure axios with timeout
-axios.defaults.timeout = 10000; // 10 seconds timeout
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  }
+});
 
 interface SavingGoal {
   id?: number;
@@ -63,7 +68,7 @@ interface GroupedTransactions {
   [key: string]: TransactionType[];
 }
 
-const HomeScreen = () => {
+export default function Home() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [balance, setBalance] = useState(0);
@@ -96,25 +101,35 @@ const HomeScreen = () => {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      setError(null);
+      console.log('Starting to fetch all data');
       
-      // Fetch data with error handling for each request
-      const results = await Promise.allSettled([
-        fetchAccountBalance(),
-        fetchBudget(),
-        fetchSavingGoals(),
-        fetchTransactions()
+      const email = await AsyncStorage.getItem('userEmail');
+      console.log('User email in fetchAllData:', email || 'Not found');
+      
+      if (!email) {
+        console.error('No user email found');
+        return;
+      }
+
+      // Fetch all data in parallel
+      const [transactions, budget, goals] = await Promise.all([
+        api.get('/transactions'),
+        api.get('/budgets/current'),
+        api.get('/goals')
       ]);
 
-      // Check if any requests failed
-      const failedRequests = results.filter(result => result.status === 'rejected');
-      if (failedRequests.length > 0) {
-        console.warn('Some requests failed:', failedRequests);
-        setError('Some data could not be loaded. Please check your connection.');
+      setTransactions(transactions.data);
+      setBudget(budget.data as Budget);
+      setSavingGoals(goals.data);
+      
+      console.log('All data fetched successfully');
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      if (error instanceof Error && error.message.includes('401')) {
+        // Handle unauthorized error
+        await AsyncStorage.removeItem('userEmail');
+        router.replace('/(auth)/login');
       }
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load data. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -122,7 +137,7 @@ const HomeScreen = () => {
   
   const fetchAccountBalance = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/accounts/balance`);
+      const response = await api.get('/accounts/balance');
       const data = response.data as { balance: number; income: number; expenses: number };
       setBalance(data.balance || 0);
       setIncome(data.income || 0);
@@ -138,7 +153,7 @@ const HomeScreen = () => {
   
   const fetchBudget = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/budgets/current`);
+      const response = await api.get('/budgets/current');
       setBudget(response.data as Budget);
     } catch (error) {
       console.error('Error fetching budget:', error);
@@ -149,7 +164,7 @@ const HomeScreen = () => {
   const createDefaultBudget = async () => {
     try {
       const currentDate = new Date();
-      const response = await axios.post(`${API_BASE_URL}/api/budgets`, {
+      const response = await api.post('/budgets', {
         month: currentDate.toLocaleString('default', { month: 'long' }),
         year: currentDate.getFullYear(),
         total: 1000,
@@ -165,7 +180,7 @@ const HomeScreen = () => {
   
   const fetchSavingGoals = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/goals`);
+      const response = await api.get('/goals');
       setSavingGoals(response.data as SavingGoal[] || []);
     } catch (error) {
       console.error('Error fetching saving goals:', error);
@@ -175,14 +190,38 @@ const HomeScreen = () => {
   
   const fetchTransactions = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/transactions`);
-      const allTxns = response.data as TransactionType[] || [];
+      console.log('Fetching transactions...');
+      const response = await api.get('/transactions');
       
+      if (!Array.isArray(response.data)) {
+        console.error('Invalid transactions data format:', response.data);
+        setTransactions([]);
+        setAllTransactions([]);
+        return;
+      }
+
+      // Преобразуем данные в нужный формат, избегая циклических ссылок
+      const allTxns = response.data.map((tx: any) => {
+        // Извлекаем только нужные данные из категории
+        const categoryName = tx.category?.name || 'Uncategorized';
+        
+        return {
+          id: tx.id,
+          type: tx.type,
+          amount: tx.amount,
+          description: tx.description,
+          category: categoryName,
+          date: tx.date,
+          walletId: tx.wallet?.id
+        };
+      });
+
       // Sort transactions by date (newest first)
       const sortedTransactions = allTxns.sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       
+      console.log('Processed transactions:', sortedTransactions);
       setAllTransactions(sortedTransactions);
       setTransactions(sortedTransactions.slice(0, 5)); // Show only 5 recent
     } catch (error) {
@@ -213,7 +252,7 @@ const HomeScreen = () => {
         return;
       }
       
-      const response = await axios.put(`${API_BASE_URL}/api/budgets/${budget.id}`, {
+      const response = await api.put(`/budgets/${budget.id}`, {
         total: newBudgetTotal
       });
       setBudget(response.data as Budget);
@@ -243,7 +282,7 @@ const HomeScreen = () => {
         imageUrl: goalData.imageUrl || null
       };
 
-      const response = await axios.post(`${API_BASE_URL}/api/goals`, payload);
+      const response = await api.post('/goals', payload);
       setSavingGoals([...savingGoals, response.data as SavingGoal]);
       setIsAddGoalVisible(false);
       Alert.alert('Success', 'Goal added successfully!');
@@ -260,7 +299,7 @@ const HomeScreen = () => {
     }
 
     try {
-      const response = await axios.put(`${API_BASE_URL}/api/goals/${goalId}`, {
+      const response = await api.put(`/goals/${goalId}`, {
         currentAmount: newAmount
       });
       setSavingGoals(savingGoals.map((goal): SavingGoal => 
@@ -275,7 +314,7 @@ const HomeScreen = () => {
 
   const deleteGoal = async (goalId: number) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/goals/${goalId}`);
+      await api.delete(`/goals/${goalId}`);
       setSavingGoals(savingGoals.filter(goal => goal.id !== goalId));
       Alert.alert('Success', 'Goal deleted successfully');
     } catch (error) {
@@ -363,7 +402,7 @@ const HomeScreen = () => {
     }
     
     // Otherwise, construct the full URL with the API base
-    return `${API_BASE_URL}/api/goals/images/${goal.imageUrl}`;
+    return `${API_BASE_URL}/goals/images/${goal.imageUrl}`;
   };
 
   const renderBudget = () => {
@@ -416,36 +455,20 @@ const HomeScreen = () => {
 
   const renderTransactionItem = (transaction: TransactionType) => (
     <View key={transaction.id} style={styles.transactionItem}>
-      <View style={styles.transactionIcon}>
-        <Ionicons 
-          name={transaction.type === 'INCOME' ? 'arrow-down' : 'arrow-up'} 
-          size={20} 
-          color={transaction.type === 'INCOME' ? '#4CAF50' : '#F44336'} 
-        />
-      </View>
-      <View style={styles.transactionDetails}>
-        <Text style={styles.transactionTitle}>{transaction.description}</Text>
-        <View style={styles.transactionMeta}>
-          <Text style={styles.transactionCategory}>{transaction.category}</Text>
-          <Text style={styles.transactionSeparator}>•</Text>
-          <Text style={styles.transactionTime}>
-            {new Date(transaction.date).toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.transactionAmount}>
-        <Text 
-          style={[
-            styles.transactionAmountText,
-            { color: transaction.type === 'INCOME' ? '#4CAF50' : '#F44336' }
-          ]}
-        >
-          {transaction.type === 'INCOME' ? '+' : '-'}{formatCurrency(transaction.amount)}
+      <View style={styles.transactionInfo}>
+        <Text style={styles.transactionDescription}>{transaction.description}</Text>
+        <Text style={styles.transactionCategory}>
+          {typeof transaction.category === 'object' && transaction.category !== null 
+            ? (transaction.category as { name: string }).name 
+            : String(transaction.category)}
         </Text>
       </View>
+      <Text style={[
+        styles.transactionAmount,
+        { color: transaction.type === 'INCOME' ? '#4CAF50' : '#F44336' }
+      ]}>
+        {transaction.type === 'INCOME' ? '+' : '-'}${transaction.amount.toFixed(2)}
+      </Text>
     </View>
   );
 
@@ -534,16 +557,19 @@ const HomeScreen = () => {
               <Ionicons name="pie-chart" size={28} color="#5E35B1" />
               <Text style={styles.categoryText}>Spending by Categories</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.categorySquare}>
+            <TouchableOpacity 
+              style={styles.categorySquare}
+              onPress={() => router.push('/(tabs)/monthly-report')}
+            >
               <Ionicons name="bar-chart" size={28} color="#5E35B1" />
               <Text style={styles.categoryText}>Budget Reports</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.categorySquare}
-              onPress={handleSeeAllGoals}
+              onPress={() => router.push('/screens/ForecastScreen')}
             >
-              <Ionicons name="flag" size={28} color="#5E35B1" />
-              <Text style={styles.categoryText}>Saving Goals</Text>
+              <Ionicons name="trending-up" size={28} color="#5E35B1" />
+              <Text style={styles.categoryText}>Forecast</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.categorySquare}
@@ -705,22 +731,25 @@ const HomeScreen = () => {
           visible={isAddTransactionVisible}
           onClose={() => setIsAddTransactionVisible(false)}
           onSuccess={fetchAllData}
-          apiBaseUrl={API_BASE_URL}
         />
 
-        <TopUpModal
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          goal={savingGoals.find(g => g.id === Number(params.goalId)) || {} as SavingGoal}
-          onSuccess={() => {
-            setModalVisible(false);
-            fetchAllData();
-          }}
-        />
+<TopUpModal
+  visible={modalVisible}
+  onClose={() => setModalVisible(false)}
+  goal={
+    params?.goalId 
+      ? savingGoals.find(g => g.id === Number(params.goalId)) || {} as SavingGoal
+      : {} as SavingGoal
+  }
+  onSuccess={() => {
+    setModalVisible(false);
+    fetchAllData();
+  }}
+/>
       </SafeAreaView>
     </NotificationProvider>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -1042,47 +1071,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  transactionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F8F9FA',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  transactionDetails: {
+  transactionInfo: {
     flex: 1,
   },
-  transactionTitle: {
+  transactionDescription: {
     fontSize: 14,
     fontWeight: '500',
     color: '#333333',
     marginBottom: 2,
   },
-  transactionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   transactionCategory: {
-    fontSize: 12,
-    color: '#757575',
-  },
-  transactionSeparator: {
-    fontSize: 12,
-    color: '#CCCCCC',
-    marginHorizontal: 6,
-  },
-  transactionTime: {
     fontSize: 12,
     color: '#757575',
   },
   transactionAmount: {
     alignItems: 'flex-end',
-  },
-  transactionAmountText: {
-    fontSize: 14,
-    fontWeight: 'bold',
   },
   moreButton: {
     color: '#5E35B1',
@@ -1113,4 +1116,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen;
+export default Home;

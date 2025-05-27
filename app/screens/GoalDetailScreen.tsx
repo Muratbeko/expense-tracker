@@ -8,7 +8,7 @@ import TopUpModal from '../components/TopUpModal';
 
 const API_BASE_URL = Platform.OS === 'web'
   ? 'http://localhost:8080'
-  : 'http://192.168.0.109:8080';
+  : 'http://localhost:8080';
 
 export default function GoalDetailScreen() {
   const { goalId } = useLocalSearchParams();

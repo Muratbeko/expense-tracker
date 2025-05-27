@@ -1,14 +1,22 @@
-import apiService from '@/services/api';
-import React, { useState } from 'react';
+import { colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { API_BASE_URL } from '../config/api';
+
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -16,18 +24,62 @@ interface AddTransactionModalProps {
   onSuccess: () => Promise<void>;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+}
+
+interface Wallet {
+  id: number;
+  name: string;
+  balance: number;
+}
+
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   visible,
   onClose,
-  onSuccess
+  onSuccess,
 }) => {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
   const [type, setType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE');
-  const [category, setCategory] = useState('');
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      fetchCategories();
+      fetchWallets();
+    }
+  }, [visible]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get<Category[]>(`${API_BASE_URL}/api/categories`);
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchWallets = async () => {
+    try {
+      const response = await axios.get<Wallet[]>(`${API_BASE_URL}/api/wallets`);
+      setWallets(response.data);
+      if (response.data.length > 0) {
+        setSelectedWallet(response.data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching wallets:', error);
+    }
+  };
 
   const handleSave = async () => {
-    if (!description || !amount || !category) {
+    if (!amount || !selectedCategory) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -39,182 +91,347 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
 
     try {
-      await apiService.createTransaction({
-        type,
+      setLoading(true);
+      const transactionData = {
         amount: amountValue,
-        description,
-        category,
+        description: description || 'No description',
+        type,
+        category: selectedCategory,
         date: new Date().toISOString(),
-        walletId: '1',
-      });
+        walletId: selectedWallet?.id
+      };
+
+      console.log('Sending transaction data:', JSON.stringify(transactionData, null, 2));
+
+      const response = await axios.post(`${API_BASE_URL}/api/transactions`, transactionData);
       
-      // Reset form
-      setDescription('');
-      setAmount('');
-      setType('EXPENSE');
-      setCategory('');
-      
-      await onSuccess();
-      onClose();
-    } catch (error) {
+      if (response.status === 201) {
+        await onSuccess();
+        onClose();
+      } else {
+        throw new Error('Failed to create transaction');
+      }
+    } catch (error: any) {
       console.error('Error adding transaction:', error);
-      Alert.alert('Error', 'Failed to add transaction. Please try again.');
+      console.error('Error details:', error.response?.data);
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'Failed to add transaction. Please try again.'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="slide"
+      transparent
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Add Transaction</Text>
-          <TextInput
-            style={styles.input}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Description"
-          />
-          <TextInput
-            style={styles.input}
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="numeric"
-            placeholder="Amount"
-          />
-          <View style={styles.typeContainer}>
-            <TouchableOpacity
-              style={[
-                styles.typeButton,
-                type === 'EXPENSE' && styles.typeButtonActive
-              ]}
-              onPress={() => setType('EXPENSE')}
-            >
-              <Text style={[
-                styles.typeButtonText,
-                type === 'EXPENSE' && styles.typeButtonTextActive
-              ]}>Expense</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.typeButton,
-                type === 'INCOME' && styles.typeButtonActive
-              ]}
-              onPress={() => setType('INCOME')}
-            >
-              <Text style={[
-                styles.typeButtonText,
-                type === 'INCOME' && styles.typeButtonTextActive
-              ]}>Income</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Add Transaction</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color={colors.black} />
             </TouchableOpacity>
           </View>
-          <TextInput
-            style={styles.input}
-            value={category}
-            onChangeText={setCategory}
-            placeholder="Category"
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Type</Text>
+              <View style={styles.segmentedControl}>
+                <TouchableOpacity
+                  style={[
+                    styles.segmentButton,
+                    type === 'EXPENSE' && styles.segmentButtonActive
+                  ]}
+                  onPress={() => setType('EXPENSE')}
+                >
+                  <Text style={[
+                    styles.segmentButtonText,
+                    type === 'EXPENSE' && styles.segmentButtonTextActive
+                  ]}>
+                    Expense
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.segmentButton,
+                    type === 'INCOME' && styles.segmentButtonActive
+                  ]}
+                  onPress={() => setType('INCOME')}
+                >
+                  <Text style={[
+                    styles.segmentButtonText,
+                    type === 'INCOME' && styles.segmentButtonTextActive
+                  ]}>
+                    Income
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Amount</Text>
+              <View style={styles.amountInputContainer}>
+                <Text style={styles.currencySymbol}>$</Text>
+                <TextInput
+                  style={styles.amountInput}
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={colors.gray}
+                />
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Description</Text>
+              <TextInput
+                style={styles.descriptionInput}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Enter description"
+                placeholderTextColor={colors.gray}
+              />
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Category</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoriesList}
+              >
+                {categories
+                  .filter(cat => cat.type === type)
+                  .map((category) => (
+                    <TouchableOpacity
+                      key={category.id}
+                      style={[
+                        styles.categoryButton,
+                        selectedCategory === category.name && styles.categoryButtonActive
+                      ]}
+                      onPress={() => setSelectedCategory(category.name)}
+                      disabled={loading}
+                    >
+                      <Text style={[
+                        styles.categoryButtonText,
+                        selectedCategory === category.name && styles.categoryButtonTextActive
+                      ]}>
+                        {category.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Wallet</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.walletsList}
+              >
+                {wallets.map((wallet) => (
+                  <TouchableOpacity
+                    key={wallet.id}
+                    style={[
+                      styles.walletButton,
+                      selectedWallet?.id === wallet.id && styles.walletButtonActive
+                    ]}
+                    onPress={() => setSelectedWallet(wallet)}
+                    disabled={loading}
+                  >
+                    <Text style={[
+                      styles.walletButtonText,
+                      selectedWallet?.id === wallet.id && styles.walletButtonTextActive
+                    ]}>
+                      {wallet.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.saveButtonText}>Save Transaction</Text>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
-              <Text style={[styles.buttonText, styles.saveButtonText]}>Save</Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    width: '90%',
-    maxWidth: 400,
+  modalContainer: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 16,
+    paddingBottom: 36,
+    height: '90%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: 3.84,
     elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightGray,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 16,
-    textAlign: 'center',
-    color: '#212121',
+    color: colors.black,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 8,
-  },
-  button: {
-    paddingVertical: 12,
+  modalContent: {
     paddingHorizontal: 20,
-    borderRadius: 8,
-    marginLeft: 8,
-    minWidth: 80,
-    alignItems: 'center',
+    paddingTop: 16,
+    maxHeight: '80%',
   },
-  saveButton: {
-    backgroundColor: '#5E35B1',
+  section: {
+    marginBottom: 24,
   },
-  buttonText: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
+    color: colors.black,
+    marginBottom: 12,
   },
-  saveButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  typeContainer: {
+  segmentedControl: {
     flexDirection: 'row',
-    marginBottom: 16,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.lightGray,
     borderRadius: 8,
     padding: 4,
   },
-  typeButton: {
+  segmentButton: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
     borderRadius: 6,
-    marginHorizontal: 2,
   },
-  typeButtonActive: {
-    backgroundColor: '#5E35B1',
+  segmentButtonActive: {
+    backgroundColor: colors.primary,
   },
-  typeButtonText: {
+  segmentButtonText: {
     fontSize: 14,
-    color: '#757575',
+    color: colors.gray,
     fontWeight: '500',
   },
-  typeButtonTextActive: {
-    color: 'white',
+  segmentButtonTextActive: {
+    color: colors.white,
+  },
+  amountInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightGray,
+    paddingVertical: 8,
+  },
+  currencySymbol: {
+    fontSize: 18,
+    color: colors.black,
+    marginRight: 8,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 18,
+    paddingVertical: 4,
+  },
+  descriptionInput: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightGray,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+  categoriesList: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.lightGray,
+    marginRight: 8,
+  },
+  categoryButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    color: colors.gray,
+  },
+  categoryButtonTextActive: {
+    color: colors.white,
+  },
+  walletsList: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+  },
+  walletButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.lightGray,
+    marginRight: 8,
+  },
+  walletButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  walletButtonText: {
+    fontSize: 14,
+    color: colors.gray,
+  },
+  walletButtonTextActive: {
+    color: colors.white,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: colors.white,
+    fontSize: 16,
     fontWeight: '600',
   },
 });
+
+export default AddTransactionModal;

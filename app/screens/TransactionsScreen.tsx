@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -16,9 +15,7 @@ import {
 import { LineChart } from 'react-native-chart-kit';
 import type { TransactionType } from '../../types';
 
-const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8080' 
-  : 'http://192.168.0.109:8080';
+import { API_BASE_URL } from '../config/api';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -108,7 +105,13 @@ const TransactionsScreen = ({ navigation }: { navigation: any }) => {
           comparison = a.amount - b.amount;
           break;
         case 'category':
-          comparison = a.category.localeCompare(b.category);
+          const categoryA = typeof a.category === 'object' && a.category !== null 
+            ? (a.category as { name: string }).name 
+            : String(a.category);
+          const categoryB = typeof b.category === 'object' && b.category !== null 
+            ? (b.category as { name: string }).name 
+            : String(b.category);
+          comparison = categoryA.localeCompare(categoryB);
           break;
       }
       
@@ -286,7 +289,11 @@ const TransactionsScreen = ({ navigation }: { navigation: any }) => {
       <View style={styles.transactionDetails}>
         <Text style={styles.transactionTitle}>{transaction.description}</Text>
         <View style={styles.transactionMeta}>
-          <Text style={styles.transactionCategory}>{transaction.category}</Text>
+          <Text style={styles.transactionCategory}>
+            {typeof transaction.category === 'object' && transaction.category !== null 
+              ? (transaction.category as { name: string }).name 
+              : String(transaction.category)}
+          </Text>
           <Text style={styles.transactionSeparator}>•</Text>
           <Text style={styles.transactionTime}>
             {new Date(transaction.date).toLocaleTimeString('en-US', { 

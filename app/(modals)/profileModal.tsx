@@ -27,7 +27,7 @@ const ProfileModal = () => {
   
   useEffect(() => {
     if (user?.imageUrl) {
-      const fullImageUrl = `http://192.168.0.109:8080/images/view/${user.imageUrl}`
+      const fullImageUrl = `http://localhost:8080/images/view/${user.imageUrl}`
       console.log('Setting image with URL:', fullImageUrl)
       setImage({ uri: fullImageUrl })
     }
@@ -80,7 +80,7 @@ const ProfileModal = () => {
     } as any)
 
     try {
-      const response = await fetch('http://192.168.0.109:8080/images/upload', {
+      const response = await fetch('http://localhost:8080/images/upload', {
         method: 'POST',
         body: formData,
         headers: {
@@ -122,7 +122,7 @@ const ProfileModal = () => {
       let imageUrl = user?.imageUrl || ''
 
       // Проверяем, изменилось ли изображение
-      const currentImageUri = user?.imageUrl ? `http://192.168.0.109:8080/images/view/${user.imageUrl}` : null
+      const currentImageUri = user?.imageUrl ? `http://localhost:8080/images/view/${user.imageUrl}` : null
       const hasNewImage = image && image.uri !== currentImageUri
 
       console.log('Current image URI:', currentImageUri)
@@ -141,7 +141,7 @@ const ProfileModal = () => {
         imageUrl,
       })
 
-      const response = await fetch('http://192.168.0.109:8080/api/users/me/update', {
+      const response = await fetch('http://localhost:8080/api/users/me/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

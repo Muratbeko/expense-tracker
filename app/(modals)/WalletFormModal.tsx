@@ -27,7 +27,7 @@ export default function WalletFormModal() {
       setExistingWallet(parsed);
       setName(parsed.name);
       if (parsed.imageUrl) {
-        const fullImageUrl = `http://192.168.0.109:8080/images/view/${parsed.imageUrl}`;
+        const fullImageUrl = `http://localhost:8080/images/view/${parsed.imageUrl}`;
         console.log('Setting image URL:', fullImageUrl);
         setImage({ uri: fullImageUrl });
         console.log('Image state set:', { uri: fullImageUrl });
@@ -68,7 +68,7 @@ export default function WalletFormModal() {
     } as any);
 
     try {
-      const response = await fetch('http://192.168.0.109:8080/api/wallets/upload', {
+      const response = await fetch('http://localhost:8080/api/wallets/upload', {
         method: 'POST',
         body: formData,
         headers: {
@@ -93,7 +93,7 @@ export default function WalletFormModal() {
 
     let imageUrl = existingWallet?.imageUrl || null;
 
-    if (image && (!existingWallet || image.uri !== `http://192.168.0.109:8080/images/view/${existingWallet.imageUrl}`)) {
+    if (image && (!existingWallet || image.uri !== `http://localhost:8080/images/view/${existingWallet.imageUrl}`)) {
       const uploaded = await uploadImage();
       if (uploaded) imageUrl = uploaded;
     }
@@ -103,8 +103,8 @@ export default function WalletFormModal() {
 
     try {
       const url = existingWallet
-        ? `http://192.168.0.109:8080/api/wallets/${existingWallet.id}`
-        : 'http://192.168.0.109:8080/api/wallets';
+        ? `http://localhost:8080/api/wallets/${existingWallet.id}`
+        : 'http://localhost:8080/api/wallets';
       const method = existingWallet ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -137,7 +137,7 @@ export default function WalletFormModal() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await fetch(`http://192.168.0.109:8080/api/wallets/${existingWallet.id}`, {
+              await fetch(`http://localhost:8080/api/wallets/${existingWallet.id}`, {
                 method: 'DELETE',
               });
               handleClose();

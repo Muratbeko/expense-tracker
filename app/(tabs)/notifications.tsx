@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { NotificationDetail } from '../components/NotificationDetail';
+import { API_BASE_URL } from '../config/api';
 
 // Настройка обработки уведомлений
 Notifications.setNotificationHandler({
@@ -15,10 +16,6 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
-
-const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8080' 
-  : 'http://192.168.0.109:8080';
 
 interface NotificationItem {
   id: number;

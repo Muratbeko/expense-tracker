@@ -1,22 +1,19 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import type { TransactionType } from '../../types';
 
-const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8080' 
-  : 'http://192.168.0.109:8080';
+import { API_BASE_URL } from '../config/api';
 
 type PeriodFilter = 'week' | 'month' | 'year';
 
@@ -88,8 +85,12 @@ const SpendingByCategoryScreen = () => {
 
     transactions.forEach(transaction => {
       if (transaction.type === 'EXPENSE') {
-        const currentAmount = spendingByCategory.get(transaction.category) || 0;
-        spendingByCategory.set(transaction.category, currentAmount + transaction.amount);
+        const categoryName = typeof transaction.category === 'object' && transaction.category !== null
+          ? (transaction.category as { name: string }).name
+          : String(transaction.category);
+        
+        const currentAmount = spendingByCategory.get(categoryName) || 0;
+        spendingByCategory.set(categoryName, currentAmount + transaction.amount);
       }
     });
 

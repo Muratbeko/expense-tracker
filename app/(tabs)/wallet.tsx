@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Image, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Image, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Wallet = {
   id: number;
@@ -15,11 +15,50 @@ export default function Wallets() {
 
   const fetchWallets = async () => {
     try {
-      const response = await fetch('http://192.168.0.109:8080/api/wallets');
-      const data = await response.json();
-      setWallets(data);
+      console.log('Fetching wallets from:', 'http://localhost:8080/api/wallets');
+      const response = await fetch('http://localhost:8080/api/wallets');
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const text = await response.text(); // Сначала получаем текст ответа
+      console.log('Raw response:', text);
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error('Invalid JSON response from server');
+      }
+
+      // Проверяем, что data это массив
+      if (!Array.isArray(data)) {
+        console.error('Invalid data format:', data);
+        throw new Error('Invalid data format: expected array');
+      }
+
+      // Проверяем структуру каждого кошелька
+      const validWallets = data.filter(wallet => {
+        const isValid = wallet && typeof wallet === 'object' && 
+                       typeof wallet.id === 'number' && 
+                       typeof wallet.name === 'string';
+        if (!isValid) {
+          console.warn('Invalid wallet data:', wallet);
+        }
+        return isValid;
+      });
+
+      console.log('Valid wallets:', validWallets);
+      setWallets(validWallets);
     } catch (error) {
       console.error('Ошибка загрузки кошельков:', error);
+      Alert.alert(
+        'Ошибка', 
+        'Не удалось загрузить кошельки. Пожалуйста, попробуйте позже или обратитесь в поддержку.'
+      );
     }
   };
 
@@ -42,7 +81,7 @@ export default function Wallets() {
 
   const renderItem = ({ item }: { item: Wallet }) => {
     // Формируем полный URL для изображения
-    const imageUrl = `http://192.168.0.109:8080/images/view/${item.imageUrl}`;
+    const imageUrl = `http://localhost:8080/images/view/${item.imageUrl}`;
     
     // Выводим URL изображения в консоль
    // console.log('Image URL:', imageUrl);

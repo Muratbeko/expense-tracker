@@ -6,14 +6,14 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+import { API_BASE_URL } from '../config/api';
 
 interface Category {
   id: number;
@@ -27,10 +27,6 @@ interface AddTransactionFormProps {
   onClose: () => void;
   onSuccess: () => void;
 }
-
-const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8080' 
-  : 'http://192.168.0.109:8080';
 
 const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose, onSuccess }) => {
   const [amount, setAmount] = useState('');

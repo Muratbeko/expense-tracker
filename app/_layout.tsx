@@ -2,13 +2,33 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { Stack } from "expo-router";
 import React, { useEffect } from "react";
+import { useColorScheme } from 'react-native';
+import { TransactionProvider } from './contexts/TransactionContext';
 import { configureNotifications } from './utils/notifications';
 
 const StackLayout = () => {
+  const colorScheme = useColorScheme();
+
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
+        },
+        headerTintColor: colorScheme === 'dark' ? '#fff' : '#000',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
       <Stack.Screen
         name="(tabs)"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="(auth)"
         options={{
           headerShown: false,
         }}
@@ -21,15 +41,24 @@ const StackLayout = () => {
         }}
       />
       <Stack.Screen
-        name="(modals)/profileModal"
+        name="(modals)"
         options={{
-          presentation: "modal",
+          headerShown: false,
+          presentation: 'modal',
         }}
       />
       <Stack.Screen
-        name="(modals)/WalletScreen"
+        name="receipt-scanner"
         options={{
-          presentation: "modal",
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name="voice-transaction"
+        options={{
+          title: 'Голосовой ввод',
+          presentation: 'modal',
         }}
       />
     </Stack>
@@ -44,7 +73,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <StackLayout />
+        <TransactionProvider>
+          <StackLayout />
+        </TransactionProvider>
       </NotificationProvider>
     </AuthProvider>
   );

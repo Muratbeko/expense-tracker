@@ -76,7 +76,7 @@ expense-tracker/
 
 ## API Integration
 
-The app communicates with a Spring Boot backend running on `http://192.168.0.109::8080`. Make sure your backend is running and accessible before using the app.
+The app communicates with a Spring Boot backend running on `http://localhost::8080`. Make sure your backend is running and accessible before using the app.
 
 ## Contributing
 

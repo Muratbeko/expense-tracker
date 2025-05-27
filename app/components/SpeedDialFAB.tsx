@@ -1,9 +1,9 @@
-import apiService from '@/services/api'; // ваш сервис для работы с транзакциями
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import axios from 'axios';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, Animated, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { apiClient } from '../config/api'; // updated to use apiClient
+import { GOOGLE_CONFIG } from '../config/constants';
 import VoiceRecognitionModal from './VoiceRecognitionModal';
 
 interface SpeedDialFABProps {
@@ -31,8 +31,6 @@ interface GeminiResponse {
   }>;
 }
 
-const GEMINI_API_KEY = 'AIzaSyCrb5mXO0QP0KII3Fh7D42Tqs_Vph9SD0g';
-
 const askGemini = async (text: string): Promise<Transaction> => {
   const prompt = `
 Extract transaction details from: "${text}".
@@ -40,8 +38,8 @@ Return JSON with fields: amount, currency, category, description, type (INCOME o
 Example: {"amount":14,"currency":"USD","category":"Groceries","description":"Grocery shopping","type":"EXPENSE","date":"2024-06-07"}
 `;
 
-  const response = await axios.post<GeminiResponse>(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY,
+  const response = await apiClient.post<GeminiResponse>(
+    `${GOOGLE_CONFIG.GEMINI_API_URL}?key=${GOOGLE_CONFIG.GEMINI_API_KEY}`,
     {
       contents: [{ parts: [{ text: prompt }] }]
     }
@@ -146,12 +144,12 @@ const SpeedDialFAB: React.FC<SpeedDialFABProps> = ({ onMic, onPhoto, onManual })
         description: transaction.description,
         category: transaction.category || 'Other',
         date: transaction.date || new Date().toISOString(),
-        walletId: '1',
+        walletId: 1,
         currency: transaction.currency || 'RUB'
       };
 
       console.log('Отправляем транзакцию:', JSON.stringify(newTransaction, null, 2));
-      const result = await apiService.createTransaction(newTransaction);
+      const result = await apiClient.post('/transactions', newTransaction);
       console.log('Ответ сервера:', JSON.stringify(result, null, 2));
       
       // Сбрасываем состояние

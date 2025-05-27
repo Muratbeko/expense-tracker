@@ -18,6 +18,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { apiClient } from '../config/api';
+import { API_CONFIG } from '../config/constants';
 
 // Category interface
 interface Category {
@@ -45,18 +47,16 @@ const NewIncome = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/categories/income');
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
+      const response = await apiClient.get<Category[]>(`${API_CONFIG.ENDPOINTS.CATEGORIES}/income`);
+      if (response.data.length > 0) {
+        setCategories(response.data);
         // Set default selected category if categories exist
-        if (data.length > 0) {
-          setSelectedCategory(data[0]);
-        }
+        setSelectedCategory(response.data[0]);
       } else {
-        Alert.alert('Error', 'Failed to fetch income categories');
+        Alert.alert('Error', 'No income categories found');
       }
     } catch (error) {
+      console.error('Error fetching categories:', error);
       Alert.alert('Error', 'Network error while fetching categories');
     }
   };
@@ -88,28 +88,18 @@ const NewIncome = () => {
         date: format(date, 'yyyy-MM-dd'),
         note,
         category: { id: selectedCategory.id },
-        type: 'INCOME'
+        type: 'INCOME',
+        walletId: 1 // Changed from string to number type
       };
 
-      const response = await fetch('http://localhost:8080/api/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Authorization: `Bearer ${token}`, if needed
-        },
-        body: JSON.stringify(transaction),
-      });
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.TRANSACTIONS, transaction);
 
-      if (response.ok) {
-        Alert.alert('Success', 'Income added successfully', [
-          { text: 'OK', onPress: () => router.back() }
-        ]);
-      } else {
-        const errorData = await response.json();
-        Alert.alert('Error', errorData.message || 'Failed to add income');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Network error while adding income');
+      Alert.alert('Success', 'Income added successfully', [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } catch (error: any) {
+      console.error('Error adding income:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to add income');
     } finally {
       setLoading(false);
     }

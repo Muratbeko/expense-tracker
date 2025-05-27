@@ -1,16 +1,16 @@
+import apiService from '@/app/services/api';
+import { TransactionType } from '@/app/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import apiService from '../../../services/api';
-import type { TransactionType } from '../../../types';
 
 export default function TransactionDetails() {
   const { id } = useLocalSearchParams();

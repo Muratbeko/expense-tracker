@@ -3,10 +3,29 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 const GOOGLE_API_KEY = 'AIzaSyCrb5mXO0QP0KII3Fh7D42Tqs_Vph9SD0g';
 
-export async function processReceipt(imageUri) {
+export interface ReceiptData {
+  amount: number;
+  description: string;
+  category: string;
+  merchantName: string;
+  date: Date;
+  items: string[];
+}
+
+interface GoogleAIResponse {
+  candidates: Array<{
+    content: {
+      parts: Array<{
+        text: string;
+      }>;
+    };
+  }>;
+}
+
+export async function processReceipt(imageUri: string): Promise<ReceiptData> {
   try {
     console.log('Исходный URI:', imageUri);
-    
+
     // Конвертируем изображение в JPEG формат принудительно
     const manipulatedImage = await manipulateAsync(
       imageUri,
@@ -14,10 +33,10 @@ export async function processReceipt(imageUri) {
         // Изменяем размер если изображение слишком большое
         { resize: { width: 1024 } }
       ],
-      { 
-        compress: 0.8, 
+      {
+        compress: 0.8,
         format: SaveFormat.JPEG, // Принудительно JPEG
-        base64: false 
+        base64: false
       }
     );
 
@@ -73,7 +92,7 @@ export async function processReceipt(imageUri) {
     };
 
     console.log('Отправляем запрос к Google AI...');
-    
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
       {
@@ -91,7 +110,7 @@ export async function processReceipt(imageUri) {
       throw new Error(`API Error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data: GoogleAIResponse = await response.json();
     console.log('Ответ от API:', data);
 
     if (!data.candidates || data.candidates.length === 0) {
@@ -99,15 +118,15 @@ export async function processReceipt(imageUri) {
     }
 
     const textResponse = data.candidates[0].content.parts[0].text;
-    
+
     // Пытаемся извлечь JSON из ответа
-    let jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+    const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('Не удалось найти JSON в ответе AI');
     }
 
     const receiptData = JSON.parse(jsonMatch[0]);
-    
+
     // Валидация и установка значений по умолчанию
     return {
       amount: receiptData.amount || 0,
@@ -118,20 +137,22 @@ export async function processReceipt(imageUri) {
       items: receiptData.items || []
     };
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Ошибка при обработке чека:', error);
-    
+
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
     // Более детальная обработка ошибок
-    if (error.message.includes('HEIC') || error.message.includes('HEIF')) {
+    if (errorMessage.includes('HEIC') || errorMessage.includes('HEIF')) {
       console.error('Ошибка формата HEIC/HEIF');
       throw new Error('Формат изображения не поддерживается. Попробуйте сделать фото в приложении.');
     }
-    
-    if (error.message.includes('Base64 decoding failed')) {
+
+    if (errorMessage.includes('Base64 decoding failed')) {
       console.error('Ошибка декодирования Base64');
       throw new Error('Ошибка обработки изображения. Попробуйте другое фото.');
     }
-    
+
     // Возвращаем данные по умолчанию в случае ошибки
     return {
       amount: 0,

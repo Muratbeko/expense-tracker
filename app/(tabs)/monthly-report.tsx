@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MonthlyReport, reportService } from '../services/reportService';
+import apiService from '../services/api';
+import type { MonthlyReport } from '../types/index';
 
 export default function MonthlyReportScreen() {
   const [report, setReport] = useState<MonthlyReport | null>(null);
@@ -14,8 +15,8 @@ export default function MonthlyReportScreen() {
 
   const setupNotifications = async () => {
     try {
-      await reportService.requestNotificationPermissions();
-      await reportService.scheduleMonthlyReportNotification();
+      await apiService.requestNotificationPermissions();
+      await apiService.scheduleMonthlyReportNotification();
     } catch (error) {
       console.error('Error setting up notifications:', error);
     }
@@ -24,7 +25,7 @@ export default function MonthlyReportScreen() {
   const generateReport = async () => {
     try {
       setLoading(true);
-      const reportData = await reportService.generateMonthlyReport();
+      const reportData = await apiService.generateMonthlyReport();
       setReport(reportData);
       
       // Send immediate notification

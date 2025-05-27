@@ -1,4 +1,3 @@
-import { API_BASE_URL } from '@/services/config';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,6 +16,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { API_BASE_URL } from '../config/api';
     
   interface SavingGoal {
     id: number;

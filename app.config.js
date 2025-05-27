@@ -27,7 +27,9 @@ export default {
       favicon: "./assets/favicon.png"
     },
     extra: {
-      EXPO_PUBLIC_GEMINI_API_KEY: "AIzaSyCrb5mXO0QP0KII3Fh7D42Tqs_Vph9SD0g"
+      EXPO_PUBLIC_API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL,
+      EXPO_PUBLIC_GEMINI_API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+      EXPO_PUBLIC_GOOGLE_SPEECH_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_SPEECH_API_KEY
     }
   }
 }; 

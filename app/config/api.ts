@@ -1,25 +1,69 @@
 
-// Определяем базовый URL API в зависимости от платформы и окружения
-const getBaseUrl = () => {
-  return 'http://localhost:8080';
-};
+import axios from 'axios';
+import { API_CONFIG as CONFIG } from './constants';
 
-export const API_BASE_URL = getBaseUrl();
+// Create centralized axios instance
+export const apiClient = axios.create({
+  baseURL: CONFIG.BASE_URL,
+  timeout: CONFIG.TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
 
-// Конфигурация для axios
+// Add request interceptor for logging
+apiClient.interceptors.request.use(
+  (config) => {
+    console.log('API Request:', {
+      method: config.method?.toUpperCase(),
+      url: `${config.baseURL}${config.url}`,
+      data: config.data
+    });
+    return config;
+  },
+  (error) => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for logging and error handling
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', {
+      status: response.status,
+      url: response.config.url,
+      data: response.data
+    });
+    return response;
+  },
+  (error) => {
+    console.error('Response error:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.message,
+      data: error.response?.data
+    });
+    return Promise.reject(error);
+  }
+);
+
+// Legacy exports for backward compatibility
+export const API_BASE_URL = CONFIG.BASE_URL;
 export const API_CONFIG = {
-  baseURL: API_BASE_URL,
-  timeout: 10000, // 10 секунд
+  baseURL: CONFIG.BASE_URL,
+  timeout: CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 };
 
-// Функция для проверки доступности API
-export const checkApiAvailability = async () => {
+// Health check function
+export const checkApiAvailability = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/health`);
+    const response = await fetch(`${CONFIG.BASE_URL}/health`);
     if (!response.ok) {
       console.error('API health check failed:', response.status);
       return false;

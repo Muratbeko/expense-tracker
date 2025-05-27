@@ -82,5 +82,5 @@ const sendPushNotification = async (title: string, body: string) => {
 };
 
 const formatCurrency = (value: number): string => {
-  return `$${Math.abs(value).toFixed(2)}`;
+  return `KGS ${Math.abs(value).toFixed(2)}`;
 };

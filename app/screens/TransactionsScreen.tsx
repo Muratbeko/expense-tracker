@@ -164,7 +164,7 @@ const TransactionsScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const formatCurrency = (value: number): string => {
-    return `$${parseFloat(value?.toString() || '0').toFixed(2)}`;
+    return `KGS ${parseFloat(value?.toString() || '0').toFixed(2)}`;
   };
 
   const getDateLabel = (date: string): string => {

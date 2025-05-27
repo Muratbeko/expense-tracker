@@ -71,7 +71,7 @@ const BalanceChart = ({ data }) => {
       />
       
       <Text style={styles.balanceAverage}>
-        Средний баланс: {Math.round(avgBalance)} ₽
+        Средний баланс: {Math.round(avgBalance)} KGS
       </Text>
     </View>
   );

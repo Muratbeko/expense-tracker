@@ -42,7 +42,7 @@ const TransactionsList = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+    return `KGS ${amount.toFixed(2)}`;
   };
 
   const getTransactionIcon = (category: string) => {

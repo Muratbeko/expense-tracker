@@ -1,4 +1,3 @@
-import ScreenWrapper from '@/components/ScreenWrapper'
 import Typo from '@/components/Typo'
 import { colors, radius, spacingX, spacingY } from '@/constants/theme'
 import { useAuth } from '@/contexts/AuthContext'
@@ -7,8 +6,8 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import React, { useEffect } from 'react'
-import { Alert, Platform, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native'
-import { accountOptionType } from '../types'
+import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { accountOptionType } from '../../types'
 
 const Profile = () => {
   const { user, logout } = useAuth()
@@ -134,11 +133,14 @@ const Profile = () => {
   }
 
   return (
-    <ScreenWrapper>
-      <View style={styles.container}>
-        {/* Status Bar */}
-        <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
-        
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.neutral50} />
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
         {/* Custom Header */}
         <View style={styles.header}>
           <Typo size={32} fontWeight="700" color={colors.neutral800}>
@@ -210,36 +212,48 @@ const Profile = () => {
             )
           })}
         </View>
-      </View>
-    </ScreenWrapper>
+        
+        {/* Bottom spacing for better scroll experience */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
 export default Profile
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: colors.neutral50,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: colors.neutral50,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: spacingX._20,
-    backgroundColor: '#f8fafc', // Светло-серый фон вместо темного
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
     paddingBottom: spacingY._20,
+    paddingHorizontal: spacingX._5,
   },
   userInfo: {
-    marginTop: verticalScale(20),
+    marginTop: verticalScale(10),
     alignItems: "center",
-    gap: spacingY._15,
+    gap: spacingY._20,
     backgroundColor: colors.white,
     borderRadius: radius._20,
-    paddingVertical: spacingY._30,
+    paddingVertical: spacingY._35,
     paddingHorizontal: spacingX._20,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 4,
+    marginBottom: spacingY._25,
   },
   avatarContainer: {
     position: "relative",
@@ -251,56 +265,68 @@ const styles = StyleSheet.create({
     height: verticalScale(120),
     width: verticalScale(120),
     borderRadius: verticalScale(60),
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: colors.white,
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowRadius: 16,
+    elevation: 10,
   },
   editAvatarButton: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
-    borderRadius: 20,
-    backgroundColor: colors.neutral700,
+    bottom: 2,
+    right: 2,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
-    elevation: 4,
-    padding: 8,
+    elevation: 6,
+    padding: 10,
+    borderWidth: 3,
+    borderColor: colors.white,
   },
   nameContainer: {
-    gap: verticalScale(6),
+    gap: verticalScale(8),
     alignItems: "center",
   },
   listIcon: {
-    height: verticalScale(44),
-    width: verticalScale(44),
+    height: verticalScale(46),
+    width: verticalScale(46),
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius._12,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   listItem: {
     backgroundColor: colors.white,
     borderRadius: radius._15,
     marginBottom: verticalScale(12),
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.neutral100,
   },
   accountOptions: {
-    marginTop: spacingY._25,
+    flex: 1,
   },
   flexRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacingX._15,
-    paddingVertical: spacingY._15,
-    paddingHorizontal: spacingX._15,
+    paddingVertical: spacingY._17,
+    paddingHorizontal: spacingX._20,
+  },
+  bottomSpacing: {
+    height: spacingY._40,
   },
 })

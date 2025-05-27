@@ -195,7 +195,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </Typo>
               <View style={styles.amountInputContainer}>
                 <Typo size={18} color={colors.darkText}>
-                  R$
+                  KGS
                 </Typo>
                 <TextInput
                   style={styles.amountInput}

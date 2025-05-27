@@ -2,10 +2,10 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
-import { Stack, Tabs, router } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Text, TouchableOpacity, View } from 'react-native';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from '../../api';
 
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -40,7 +40,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   }, [state.index]);
 
   useEffect(() => {
-    Notifications.setBadgeCountAsync(unreadCount);
+    if (Platform.OS !== 'web') {
+      Notifications.setBadgeCountAsync(unreadCount);
+    }
     // Если есть функция обновления счетчика в таб-баре, вызывайте её тут
     // Например: updateTabBarUnreadCount(unreadCount);
   }, [unreadCount]);
@@ -241,95 +243,71 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function TabLayout() {
   return (
-    <>
-      <Stack.Screen
-        name="screens/TransactionsScreen"
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
+      tabBar={props => <CustomTabBar {...props} />}
+    >
+      <Tabs.Screen
+        name="index"
         options={{
-          headerTitle: '',
-          headerBackTitle: 'Back',
-          headerTintColor: '#212121',
-          headerShadowVisible: false
+          title: 'Home',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
         }}
       />
-      <Tabs
-        screenOptions={{
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: 'Wallet',
           headerShown: false,
-          tabBarStyle: { display: 'none' }
+          tabBarIcon: ({ color }) => <Ionicons name="wallet" size={24} color={color} />,
         }}
-        tabBar={props => <CustomTabBar {...props} />}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Home',
-            headerShown: false,
-            tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="monthly-report"
-          options={{
-            title: 'Reports',
-            headerShown: false,
-            tabBarIcon: ({ color }) => <Ionicons name="bar-chart" size={24} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="wallet"
-          options={{
-            title: 'Wallet',
-            headerShown: false,
-            tabBarIcon: ({ color }) => <Ionicons name="wallet" size={24} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="notifications"
-          options={{
-            title: 'Notifications',
-            headerShown: true,
-            headerTitle: 'Notifications',
-            headerTitleStyle: {
-              fontSize: 20,
-              fontWeight: '600',
-            },
-            headerStyle: {
-              backgroundColor: '#FFFFFF',
-            },
-            headerShadowVisible: false,
-            headerButtons: {
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-            },
-            clearAllButton: {
-              backgroundColor: '#F44336',
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 4,
-              minWidth: 90,
-              alignItems: 'center',
-              marginRight: 8,
-              marginBottom: 0,
-            },
-            markAllButton: {
-              backgroundColor: '#2196F3',
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 4,
-              minWidth: 90,
-              alignItems: 'center',
-            },
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-            headerShown: false,
-            tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
-          }}
-        />
-      </Tabs>
-    </>
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Notifications',
+          headerShown: true,
+          headerTitle: 'Notifications',
+          headerTitleStyle: {
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+          },
+          headerShadowVisible: false,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="monthly-report"
+        options={{
+          title: 'Reports',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <Ionicons name="bar-chart" size={24} color={color} />,
+          href: null, // Hide this tab from the tab bar since it's accessed differently
+        }}
+      />
+      <Tabs.Screen
+        name="forecast"
+        options={{
+          title: 'Forecast',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <Ionicons name="trending-up" size={24} color={color} />,
+          href: null, // Hide this tab from the tab bar since it's accessed differently
+        }}
+      />
+    </Tabs>
   );
 }

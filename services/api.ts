@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { apiClient } from '../config/api';
-import { API_CONFIG } from '../config/constants';
+import { apiClient } from '../api';
+import { API_CONFIG } from '../constants';
 import type {
   Budget,
   Category,
@@ -290,7 +290,7 @@ class ApiService {
         ? `${API_CONFIG.ENDPOINTS.CATEGORIES}?type=${type}` 
         : API_CONFIG.ENDPOINTS.CATEGORIES;
       const response = await apiClient.get<Category[]>(url);
-      return response.data.map(cat => ({
+      return response.data.map((cat: any) => ({
         id: cat.id,
         name: String(cat.name),
         type: cat.type,

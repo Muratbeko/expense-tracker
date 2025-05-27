@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from '../api';
 
 interface Category {
   id: number;

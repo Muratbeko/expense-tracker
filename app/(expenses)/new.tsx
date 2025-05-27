@@ -15,8 +15,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { apiClient } from '../config/api';
-import { API_CONFIG } from '../config/constants';
+import { apiClient } from '../../api';
+import { API_CONFIG } from '../../constants';
 
 interface Category {
   id: number;

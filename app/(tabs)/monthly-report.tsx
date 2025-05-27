@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import apiService from '../services/api';
-import type { MonthlyReport } from '../types/index';
+import apiService from '../../services/api';
+import type { MonthlyReport } from '../../types/index';
 
 export default function MonthlyReportScreen() {
   const [report, setReport] = useState<MonthlyReport | null>(null);

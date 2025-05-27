@@ -10,8 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { Alert, Platform, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
-import { apiClient } from '../config/api'
-import { API_CONFIG } from '../config/constants'
+import { apiClient } from '../../api'
+import { API_CONFIG } from '../../constants'
 
 const ProfileModal = () => {
   const { user, updateProfile } = useAuth()

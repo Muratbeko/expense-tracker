@@ -1,5 +1,5 @@
-import apiService from '@/app/services/api';
-import { TransactionType } from '@/app/types';
+import apiService from '@/services/api';
+import { TransactionType } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';

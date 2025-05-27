@@ -3,9 +3,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import TopUpModal from '../components/TopUpModal';
-import apiService from '../services/api';
-import type { SavingGoal, Transaction } from '../types';
+import TopUpModal from '../../components/TopUpModal';
+import apiService from '../../services/api';
+import type { SavingGoal, Transaction } from '../../types';
 
 interface CircularProgressProps {
   progress: number;

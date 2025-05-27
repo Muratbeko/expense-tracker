@@ -1,5 +1,5 @@
-import apiService from '@/app/services/api';
-import { User } from '@/app/types';
+import apiService from '@/services/api';
+import { User } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';

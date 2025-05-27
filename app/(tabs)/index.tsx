@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Image } from 'react-native';
 
-import { TransactionType } from '@/app/types';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import {
   ActivityIndicator,
@@ -20,10 +19,11 @@ import {
 import { AddGoalModal } from '../(modals)/AddGoalModal';
 import { AddTransactionModal } from '../(modals)/AddTransactionModal';
 import { EditBudgetModal } from '../(modals)/EditBudgetModal';
-import { BudgetNotification } from '../components/BudgetNotification';
-import TopUpModal from '../components/TopUpModal';
-import { apiClient } from '../config/api';
-import { API_CONFIG } from '../config/constants';
+import { apiClient } from '../../api';
+import { BudgetNotification } from '../../components/BudgetNotification';
+import TopUpModal from '../../components/TopUpModal';
+import { API_CONFIG } from '../../constants';
+import { TransactionType } from '../../types';
 
 interface SavingGoal {
   id?: number;

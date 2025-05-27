@@ -2,17 +2,17 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from '../../api';
 
 const screenWidth = Dimensions.get('window').width;
 

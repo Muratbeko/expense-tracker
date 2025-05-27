@@ -5,8 +5,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { apiClient } from '../config/api';
-import { API_CONFIG } from '../config/constants';
+import { apiClient } from '../../api';
+import { API_CONFIG } from '../../constants';
 
 type Wallet = {
   id?: number;

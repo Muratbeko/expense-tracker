@@ -15,9 +15,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { API_CONFIG } from '../config/constants';
-import apiService from '../services/api';
-import type { SavingGoal } from '../types';
+import { API_CONFIG } from '../../constants';
+import apiService from '../../services/api';
+import type { SavingGoal } from '../../types';
 
 interface FormData {
   name: string;

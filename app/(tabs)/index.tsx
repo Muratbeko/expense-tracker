@@ -102,8 +102,8 @@ export default function Home() {
       // Fetch all data in parallel
       const [transactions, budget, goals] = await Promise.all([
         apiClient.get(API_CONFIG.ENDPOINTS.TRANSACTIONS),
-        apiClient.get('/budgets/current'),
-        apiClient.get('/goals')
+        apiClient.get(API_CONFIG.ENDPOINTS.BUDGETS + '/current'),
+        apiClient.get(API_CONFIG.ENDPOINTS.GOALS)
       ]);
 
       setTransactions(transactions.data as TransactionType[]);
@@ -168,7 +168,7 @@ export default function Home() {
 
   const fetchSavingGoals = async () => {
     try {
-      const response = await apiClient.get('/goals');
+      const response = await apiClient.get(API_CONFIG.ENDPOINTS.GOALS);
       setSavingGoals(response.data as SavingGoal[] || []);
     } catch (error) {
       console.error('Error fetching saving goals:', error);
@@ -270,7 +270,7 @@ export default function Home() {
         imageUrl: goalData.imageUrl || null
       };
 
-      const response = await apiClient.post('/goals', payload);
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.GOALS, payload);
       setSavingGoals([...savingGoals, response.data as SavingGoal]);
       setIsAddGoalVisible(false);
       Alert.alert('Success', 'Goal added successfully!');
@@ -287,7 +287,7 @@ export default function Home() {
     }
 
     try {
-      const response = await apiClient.put(`/goals/${goalId}`, {
+      const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.GOALS}/${goalId}`, {
         currentAmount: newAmount
       });
       setSavingGoals(savingGoals.map((goal): SavingGoal =>
@@ -302,7 +302,7 @@ export default function Home() {
 
   const deleteGoal = async (goalId: number) => {
     try {
-      await apiClient.delete(`/goals/${goalId}`);
+      await apiClient.delete(`${API_CONFIG.ENDPOINTS.GOALS}/${goalId}`);
       setSavingGoals(savingGoals.filter(goal => goal.id !== goalId));
       Alert.alert('Success', 'Goal deleted successfully');
     } catch (error) {
@@ -390,7 +390,7 @@ export default function Home() {
     }
 
     // Otherwise, construct the full URL with the API base
-    return `${API_CONFIG.BASE_URL}/goals/images/${goal.imageUrl}`;
+    return `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.GOALS}/images/${goal.imageUrl}`;
   };
 
 

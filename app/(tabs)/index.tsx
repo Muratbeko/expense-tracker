@@ -125,7 +125,7 @@ export default function Home() {
 
   const fetchAccountBalance = async () => {
     try {
-      const response = await apiClient.get('/accounts/balance');
+      const response = await apiClient.get(API_CONFIG.ENDPOINTS.ACCOUNTS + '/balance');
       const data = response.data as { balance: number; income: number; expenses: number };
       setBalance(data.balance || 0);
       setIncome(data.income || 0);
@@ -141,7 +141,7 @@ export default function Home() {
 
   const fetchBudget = async () => {
     try {
-      const response = await apiClient.get('/budgets/current');
+      const response = await apiClient.get(API_CONFIG.ENDPOINTS.BUDGETS + '/current');
       setBudget(response.data as Budget);
     } catch (error) {
       console.error('Error fetching budget:', error);
@@ -152,7 +152,7 @@ export default function Home() {
   const createDefaultBudget = async () => {
     try {
       const currentDate = new Date();
-      const response = await apiClient.post('/budgets', {
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.BUDGETS, {
         month: currentDate.toLocaleString('default', { month: 'long' }),
         year: currentDate.getFullYear(),
         total: 1000,

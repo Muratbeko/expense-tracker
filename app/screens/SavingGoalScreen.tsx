@@ -301,7 +301,7 @@ const SavingGoalScreen: React.FC = () => {
   };
 
   const formatCurrency = (amount: number): string => {
-    return `$${amount.toFixed(2)}`;
+    return `KGS ${amount.toFixed(2)}`;
   };
 
   const calculateProgress = (current: number, target: number): number => {

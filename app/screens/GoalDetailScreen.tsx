@@ -122,7 +122,7 @@ export default function GoalDetailScreen() {
   const isCompleted = progress >= 100;
   const remainingAmount = goal.targetAmount - goal.currentAmount;
 
-  const formatCurrency = (amount: number): string => `${amount.toFixed(2)} ₽`;
+  const formatCurrency = (amount: number): string => `${amount.toFixed(2)} KGS`;
 
   // SVG Circle Progress Component
   const CircularProgress: React.FC<CircularProgressProps> = ({ progress, size = 200 }) => {
@@ -158,10 +158,10 @@ export default function GoalDetailScreen() {
           />
         </Svg>
         <View style={styles.progressTextContainer}>
-          <Text style={[styles.currentAmount, { fontWeight: 'bold', fontSize: 28 }]}>{goal.currentAmount} ₽</Text>
+          <Text style={[styles.currentAmount, { fontWeight: 'bold', fontSize: 28 }]}>{goal.currentAmount} KGS</Text>
           {!isCompleted && remainingAmount > 0 && daysLeft !== null && (
             <Text style={{ color: '#888', fontSize: 16, textAlign: 'center' }}>
-              Осталось {remainingAmount} ₽ за {daysLeft} {daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}
+              Осталось {remainingAmount} KGS за {daysLeft} {daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}
             </Text>
           )}
           {isCompleted && (
@@ -186,7 +186,7 @@ export default function GoalDetailScreen() {
         </Text>
       </View>
       <View style={styles.transactionRight}>
-        <Text style={styles.transactionAmount}>+{item.amount} ₽</Text>
+        <Text style={styles.transactionAmount}>+{item.amount} KGS</Text>
         <Text style={styles.transactionDate}>
           {new Date(item.date).toLocaleDateString('en-GB')}
         </Text>
@@ -214,7 +214,7 @@ export default function GoalDetailScreen() {
       {/* Goal Title and Amount */}
       <View style={styles.titleSection}>
         <Text style={styles.goalName}>{goal.name}</Text>
-        <Text style={styles.targetAmount}>{goal.targetAmount} ₽</Text>
+        <Text style={styles.targetAmount}>{goal.targetAmount} KGS</Text>
       </View>
 
       {/* Circular Progress */}

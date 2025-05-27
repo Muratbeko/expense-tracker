@@ -104,19 +104,19 @@ const ForecastChart = ({ data, title, color = '#007AFF' }) => {
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Средний прогноз</Text>
           <Text style={styles.statValue}>
-            {Math.round(data.forecastValues.reduce((a, b) => a + b, 0) / data.forecastValues.length)} ₽
+            {Math.round(data.forecastValues.reduce((a, b) => a + b, 0) / data.forecastValues.length)} KGS
           </Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Максимум</Text>
           <Text style={styles.statValue}>
-            {Math.round(Math.max(...data.forecastValues))} ₽
+            {Math.round(Math.max(...data.forecastValues))} KGS
           </Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Минимум</Text>
           <Text style={styles.statValue}>
-            {Math.round(Math.min(...data.forecastValues))} ₽
+            {Math.round(Math.min(...data.forecastValues))} KGS
           </Text>
         </View>
       </View>

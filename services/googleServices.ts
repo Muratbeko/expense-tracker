@@ -1,4 +1,4 @@
-import { GOOGLE_CONFIG } from '../config/constants';
+import { GOOGLE_CONFIG } from '../constants';
 import type { Transaction } from '../types/index';
 
 export interface GeminiResponse {
@@ -167,12 +167,12 @@ Example: {"amount":14,"currency":"USD","category":"Groceries","description":"Gro
         .reduce((sum, t) => sum + t.amount, 0);
 
       const prompt = `As a financial advisor, analyze these recent transactions and provide advice:
-Recent expenses: $${totalExpenses}
-Recent income: $${totalIncome}
-Budget: ${budget ? `$${budget}` : 'Not set'}
+Recent expenses: KGS ${totalExpenses}
+Recent income: KGS ${totalIncome}
+Budget: ${budget ? `KGS ${budget}` : 'Not set'}
 
 Transactions:
-${recentTransactions.map(t => `${t.type}: $${t.amount} - ${t.category} (${t.description})`).join('\n')}
+${recentTransactions.map(t => `${t.type}: KGS ${t.amount} - ${t.category} (${t.description})`).join('\n')}
 
 Provide 3-4 specific, actionable financial tips based on this data. Keep response under 200 words.`;
 
@@ -242,18 +242,18 @@ Provide 3-4 specific, actionable financial tips based on this data. Keep respons
   private createForecastPrompt(analysisData: any, period: string): string {
     return `Analyze this expense data and create a ${period} forecast:
 
-Total expenses: $${analysisData.totalAmount}
+Total expenses: KGS ${analysisData.totalAmount}
 Transaction count: ${analysisData.transactionCount}
-Average expense: $${analysisData.averageExpense.toFixed(2)}
+Average expense: KGS ${analysisData.averageExpense.toFixed(2)}
 
 Category breakdown:
 ${Object.entries(analysisData.categoryTotals)
-  .map(([category, amount]) => `${category}: $${amount}`)
+  .map(([category, amount]) => `${category}: KGS ${amount}`)
   .join('\n')}
 
 Monthly totals:
 ${Object.entries(analysisData.monthlyTotals)
-  .map(([month, amount]) => `${month}: $${amount}`)
+  .map(([month, amount]) => `${month}: KGS ${amount}`)
   .join('\n')}
 
 Provide a JSON response with:

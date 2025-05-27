@@ -94,6 +94,8 @@ const ProfileModal = () => {
       console.log('Upload response:', responseText)
       
       if (typeof responseText === 'string') {
+        // FIX: fix this dollar sign
+        // check first, it might be regix
         const filenameMatch = responseText.match(/успешно: (.+)$/)
         if (filenameMatch && filenameMatch[1]) {
           console.log('Extracted filename:', filenameMatch[1])

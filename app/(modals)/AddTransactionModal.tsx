@@ -180,7 +180,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Amount</Text>
               <View style={styles.amountInputContainer}>
-                <Text style={styles.currencySymbol}>$</Text>
+                <Text style={styles.currencySymbol}>KGS</Text>
                 <TextInput
                   style={styles.amountInput}
                   value={amount}

@@ -206,7 +206,7 @@ export default function AddTransactionModal({ visible, onClose, onTransactionAdd
                 >
                   <Text style={styles.walletName}>{wallet.name}</Text>
                   {wallet.balance !== undefined && (
-                    <Text style={styles.walletBalance}>{wallet.balance} ₽</Text>
+                    <Text style={styles.walletBalance}>{wallet.balance} KGS</Text>
                   )}
                 </TouchableOpacity>
               ))}

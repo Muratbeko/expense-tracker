@@ -172,19 +172,19 @@ export default function ForecastScreen() {
       const prompt = `
         Проанализируй следующие данные о расходах пользователя и дай прогноз на ${period === 'week' ? 'неделю' : period === 'month' ? 'месяц' : 'год'}:
 
-        Общие расходы за последние месяцы: $${totalExpenses.toFixed(2)}
-        Средние месячные расходы: $${avgMonthlyExpenses.toFixed(2)}
+        Общие расходы за последние месяцы: KGS ${totalExpenses.toFixed(2)}
+        Средние месячные расходы: KGS ${avgMonthlyExpenses.toFixed(2)}
         
         Расходы по категориям:
         ${Object.entries(categoryTotals)
           .sort(([,a], [,b]) => b - a)
-          .map(([cat, amount]) => `- ${cat}: $${amount.toFixed(2)}`)
+          .map(([cat, amount]) => `- ${cat}: KGS ${amount.toFixed(2)}`)
           .join('\n')}
         
         Месячная динамика:
         ${Object.entries(monthlyTotals)
           .sort(([a], [b]) => a.localeCompare(b))
-          .map(([month, amount]) => `- ${month}: $${amount.toFixed(2)}`)
+          .map(([month, amount]) => `- ${month}: KGS ${amount.toFixed(2)}`)
           .join('\n')}
 
         Пожалуйста, предоставь:
@@ -300,7 +300,7 @@ export default function ForecastScreen() {
   };
 
   const formatCurrency = (amount: number): string => {
-    return `$${amount.toFixed(2)}`;
+    return `KGS ${amount.toFixed(2)}`;
   };
 
   const getPeriodLabel = (period: string): string => {
@@ -428,7 +428,7 @@ export default function ForecastScreen() {
                   data={chartData}
                   width={screenWidth - 40}
                   height={220}
-                  yAxisLabel="$"
+                  yAxisLabel="KGS"
                   yAxisSuffix=""
                   chartConfig={{
                     backgroundColor: '#ffffff',

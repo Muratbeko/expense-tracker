@@ -28,7 +28,7 @@ const TransactionsList = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:8080/api/transactions/wallet/${selectedWalletId}`
+        `http://${process.env.EXPO_PUBLIC_HOST_IP}:8080/api/transactions/wallet/${selectedWalletId}`
       );
       if (response.ok) {
         const data = await response.json();

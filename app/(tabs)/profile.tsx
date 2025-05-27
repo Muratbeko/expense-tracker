@@ -22,7 +22,7 @@ const Profile = () => {
     console.log('Profile page - User imageUrl:', user?.imageUrl)
     
     if (user?.imageUrl) {
-      const fullImageUrl = `http://localhost:8080/images/view/${user.imageUrl}`
+      const fullImageUrl = `http://${process.env.EXPO_PUBLIC_HOST_IP}:8080/images/view/${user.imageUrl}`
       console.log('Profile page - Full image URL:', fullImageUrl)
     }
   }, [user])
@@ -125,7 +125,7 @@ const Profile = () => {
   // Create the image source with proper URL formatting
   const getImageSource = () => {
     if (user?.imageUrl) {
-      const fullUrl = `http://localhost:8080/images/view/${user.imageUrl}`
+      const fullUrl = `http://${process.env.EXPO_PUBLIC_HOST_IP}:8080/images/view/${user.imageUrl}`
       console.log('Using image URL:', fullUrl)
       return { uri: fullUrl }
     }

@@ -1,9 +1,10 @@
 import apiService from '@/app/services/api';
+import { User } from '@/app/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import type { User } from '../types/index';
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userCredentials, setUserCredentials] = useState<{ email: string; password: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -29,10 +31,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const email = await AsyncStorage.getItem('userEmail');
+      let password: string | null = null;
+      
+      try {
+        password = await SecureStore.getItemAsync('userPassword'); // Using secure storage for password
+      } catch (secureStoreError) {
+        console.warn('SecureStore not available, trying AsyncStorage fallback');
+        password = await AsyncStorage.getItem('userPassword');
+      }
 
       console.log('Loading user - Email:', email || 'Not found');
 
       if (email) {
+        // Store credentials in state for logout
+        if (password) {
+          setUserCredentials({ email, password });
+        }
+        
         try {
           const userData = await apiService.getProfile(email);
           console.log('User data loaded:', userData);
@@ -40,14 +55,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
           console.error('Error loading user profile:', error);
           await AsyncStorage.removeItem('userEmail');
+          try {
+            await SecureStore.deleteItemAsync('userPassword');
+          } catch {
+            await AsyncStorage.removeItem('userPassword');
+          }
           setUser(null);
+          setUserCredentials(null);
         }
       } else {
         setUser(null);
+        setUserCredentials(null);
       }
     } catch (error) {
       console.error('Error in loadUser:', error);
       setUser(null);
+      setUserCredentials(null);
     } finally {
       setLoading(false);
     }
@@ -62,7 +85,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthContext: Login successful, saving data');
 
       await AsyncStorage.setItem('userEmail', email);
+      try {
+        await SecureStore.setItemAsync('userPassword', password); // Using secure storage for password
+      } catch (secureStoreError) {
+        console.warn('SecureStore not available, using AsyncStorage fallback');
+        await AsyncStorage.setItem('userPassword', password);
+      }
       setUser(userData);
+      setUserCredentials({ email, password });
 
       console.log('AuthContext: User set, login complete');
     } catch (error) {
@@ -82,7 +112,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthContext: Registration successful, saving data');
 
       await AsyncStorage.setItem('userEmail', email);
+      try {
+        await SecureStore.setItemAsync('userPassword', password); // Using secure storage for password
+      } catch (secureStoreError) {
+        console.warn('SecureStore not available, using AsyncStorage fallback');
+        await AsyncStorage.setItem('userPassword', password);
+      }
       setUser(userData);
+      setUserCredentials({ email, password });
 
       console.log('AuthContext: User set, registration complete');
     } catch (error) {
@@ -99,19 +136,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthContext: Starting logout process');
 
       try {
-        await apiService.logout();
+        // Pass stored credentials to logout API
+        await apiService.logout(userCredentials?.email, userCredentials?.password);
+        console.log('AuthContext: Server logout successful');
       } catch (error) {
-        console.warn('Server logout failed, continuing with local logout');
+        console.warn('AuthContext: Server logout failed, continuing with local logout:', error);
       }
 
+      // Clear local storage
       await AsyncStorage.removeItem('userEmail');
+      try {
+        await SecureStore.deleteItemAsync('userPassword');
+      } catch {
+        await AsyncStorage.removeItem('userPassword');
+      }
+      console.log('AuthContext: Local storage cleared');
+      
+      // Clear user state
       setUser(null);
+      setUserCredentials(null);
+      console.log('AuthContext: User state cleared');
 
-      console.log('AuthContext: Logout complete, redirecting');
+      console.log('AuthContext: Logout complete, redirecting to login');
       router.replace("/(auth)/login");
     } catch (error) {
       console.error('AuthContext: Logout error:', error);
-      Alert.alert("Error", "Network error during logout.");
+      Alert.alert("Error", "Network error during logout. Please try again.");
     } finally {
       setLoading(false);
     }

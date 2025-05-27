@@ -1,43 +1,61 @@
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import TopUpModal from '../components/TopUpModal';
+import apiService from '../services/api';
+import type { SavingGoal, Transaction } from '../types';
 
-const API_BASE_URL = Platform.OS === 'web'
-  ? 'http://localhost:8080'
-  : 'http://localhost:8080';
+interface CircularProgressProps {
+  progress: number;
+  size?: number;
+}
 
 export default function GoalDetailScreen() {
-  const { goalId } = useLocalSearchParams();
+  const { goalId } = useLocalSearchParams<{ goalId: string }>();
   const router = useRouter();
-  const [goal, setGoal] = useState(null);
-  const [transactions, setTransactions] = useState([]);
+  const [goal, setGoal] = useState<SavingGoal | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    fetchGoalAndTransactions();
+    if (goalId) {
+      fetchGoalAndTransactions();
+    }
   }, [goalId]);
 
-  const fetchGoalAndTransactions = async () => {
+  const fetchGoalAndTransactions = async (): Promise<void> => {
+    if (!goalId) return;
+    
     setLoading(true);
     try {
-      const goalRes = await axios.get(`${API_BASE_URL}/api/goals/${goalId}`);
-      setGoal(goalRes.data);
+      // Use the apiService instead of direct axios calls
+      const goalData = await apiService.getGoals();
+      const foundGoal = goalData.find(g => g.id?.toString() === goalId);
+      if (foundGoal) {
+        setGoal(foundGoal);
+      }
 
-      const txRes = await axios.get(`${API_BASE_URL}/api/transactions`);
-      setTransactions(txRes.data.filter(tx => tx.goalId === Number(goalId)));
-    } catch (e) {
-      console.error('Error fetching data:', e);
+      const allTransactions = await apiService.getTransactions();
+      const goalTransactions = allTransactions.filter(tx => 
+        tx.description?.includes(foundGoal?.name || '') || 
+        tx.category === 'goal' || 
+        tx.description?.toLowerCase().includes('goal')
+      );
+      setTransactions(goalTransactions);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      Alert.alert('Error', 'Failed to load goal details');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCompleteGoal = async () => {
+  const handleCompleteGoal = async (): Promise<void> => {
+    if (!goalId || !goal?.id) return;
+
     Alert.alert(
       "Complete Goal",
       "Are you sure you want to mark this goal as completed?",
@@ -47,10 +65,13 @@ export default function GoalDetailScreen() {
           text: "Complete", 
           onPress: async () => {
             try {
-              // Add your API call to mark goal as completed
-              await axios.patch(`${API_BASE_URL}/api/goals/${goalId}`, { status: 'completed' });
+              await apiService.updateGoal(goal.id!.toString(), { 
+                currentAmount: goal.targetAmount,
+                // Add any additional completion status fields your API supports
+              });
               router.back();
-            } catch (e) {
+            } catch (error) {
+              console.error('Error completing goal:', error);
               Alert.alert("Error", "Failed to complete goal");
             }
           }
@@ -59,7 +80,9 @@ export default function GoalDetailScreen() {
     );
   };
 
-  const handleDeleteGoal = async () => {
+  const handleDeleteGoal = async (): Promise<void> => {
+    if (!goalId || !goal?.id) return;
+
     Alert.alert(
       "Delete Goal",
       "Are you sure you want to delete this goal? This action cannot be undone.",
@@ -70,9 +93,10 @@ export default function GoalDetailScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              await axios.delete(`${API_BASE_URL}/api/goals/${goalId}`);
+              await apiService.deleteGoal(goal.id!.toString());
               router.back();
-            } catch (e) {
+            } catch (error) {
+              console.error('Error deleting goal:', error);
               Alert.alert("Error", "Failed to delete goal");
             }
           }
@@ -91,17 +115,17 @@ export default function GoalDetailScreen() {
   }
 
   const daysLeft = goal.targetDate
-    ? Math.max(0, Math.ceil((new Date(goal.targetDate) - new Date()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((new Date(goal.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : null;
 
   const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
   const isCompleted = progress >= 100;
   const remainingAmount = goal.targetAmount - goal.currentAmount;
 
-  const formatCurrency = (amount: number) => `${amount.toFixed(2)} ₽`;
+  const formatCurrency = (amount: number): string => `${amount.toFixed(2)} ₽`;
 
   // SVG Circle Progress Component
-  const CircularProgress = ({ progress, size = 200 }) => {
+  const CircularProgress: React.FC<CircularProgressProps> = ({ progress, size = 200 }) => {
     const strokeWidth = 8;
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
@@ -148,6 +172,28 @@ export default function GoalDetailScreen() {
     );
   };
 
+  const renderTransactionItem = ({ item }: { item: Transaction }) => (
+    <View style={styles.transactionItem}>
+      <View style={styles.transactionIcon}>
+        <Text style={styles.iconEmoji}>💰</Text>
+      </View>
+      <View style={styles.transactionDetails}>
+        <Text style={styles.transactionDescription}>
+          {item.description || 'Top up'}
+        </Text>
+        <Text style={styles.transactionSource}>
+          wallet {item.walletId || 'default'} → {goal.name}
+        </Text>
+      </View>
+      <View style={styles.transactionRight}>
+        <Text style={styles.transactionAmount}>+{item.amount} ₽</Text>
+        <Text style={styles.transactionDate}>
+          {new Date(item.date).toLocaleDateString('en-GB')}
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -189,32 +235,12 @@ export default function GoalDetailScreen() {
         {/* Today Section */}
         {transactions.length > 0 && (
           <View style={styles.todaySection}>
-            <Text style={styles.todayTitle}>Today</Text>
+            <Text style={styles.todayTitle}>Recent</Text>
             <FlatList
               data={transactions.slice(0, 3)} // Show recent transactions
-              keyExtractor={item => item.id.toString()}
+              keyExtractor={(item, index) => item.id?.toString() || index.toString()}
               showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <View style={styles.transactionItem}>
-                  <View style={styles.transactionIcon}>
-                    <Text style={styles.iconEmoji}>💰</Text>
-                  </View>
-                  <View style={styles.transactionDetails}>
-                    <Text style={styles.transactionDescription}>
-                      {item.description || 'Top up'}
-                    </Text>
-                    <Text style={styles.transactionSource}>
-                      wallet {item.walletId} → {goal.name}
-                    </Text>
-                  </View>
-                  <View style={styles.transactionRight}>
-                    <Text style={styles.transactionAmount}>+{item.amount} ₽</Text>
-                    <Text style={styles.transactionDate}>
-                      {new Date(item.date).toLocaleDateString('en-GB')}
-                    </Text>
-                  </View>
-                </View>
-              )}
+              renderItem={renderTransactionItem}
             />
           </View>
         )}

@@ -102,6 +102,34 @@ class ApiService {
     }
   }
 
+  async logout(email?: string, password?: string): Promise<void> {
+    try {
+      console.log('Logging out user:', email || 'unknown');
+      
+      // Prepare logout data
+      const logoutData: any = {
+        timestamp: new Date().toISOString()
+      };
+      
+      // Include email and password if provided
+      if (email) {
+        logoutData.email = email;
+      }
+      if (password) {
+        logoutData.password = password;
+      }
+      
+      // Call the server logout endpoint
+      const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.AUTH}/logout`, logoutData);
+      
+      console.log('Server logout successful:', response.status);
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      // Don't throw error for logout - allow local logout to proceed
+      console.warn('Server logout failed, proceeding with local logout');
+    }
+  }
+
   // ========== Transactions ==========
   async getTransactions(userId?: string): Promise<Transaction[]> {
     try {

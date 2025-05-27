@@ -79,7 +79,8 @@
         {
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to select receipts."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "notification": {
       "icon": "./assets/notification-icon.png",

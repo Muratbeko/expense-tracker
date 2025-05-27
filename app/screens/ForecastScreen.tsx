@@ -15,8 +15,8 @@ import {
   View,
 } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
-import { apiClient } from '../config/api';
-import { API_CONFIG, GOOGLE_CONFIG } from '../config/constants';
+import { apiClient } from '../../api';
+import { API_CONFIG, GOOGLE_CONFIG } from '../../constants';
 
 const screenWidth = Dimensions.get('window').width;
 

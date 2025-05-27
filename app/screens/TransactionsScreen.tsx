@@ -15,7 +15,7 @@ import {
 import { LineChart } from 'react-native-chart-kit';
 import type { TransactionType } from '../../types';
 
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from '../../api';
 
 const screenWidth = Dimensions.get('window').width;
 

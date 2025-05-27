@@ -3,8 +3,8 @@ import axios from 'axios';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { NotificationDetail } from '../components/NotificationDetail';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from '../../api';
+import { NotificationDetail } from '../../components/NotificationDetail';
 
 // Настройка обработки уведомлений
 Notifications.setNotificationHandler({

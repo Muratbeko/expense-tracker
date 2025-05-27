@@ -4,8 +4,8 @@ import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { apiClient } from '../config/api';
-import { GOOGLE_CONFIG } from '../config/constants';
+import { apiClient } from '../../api';
+import { GOOGLE_CONFIG } from '../../constants';
 
 interface GeminiResponse {
   candidates?: Array<{

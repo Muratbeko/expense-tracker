@@ -2,8 +2,8 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, Animated, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { apiClient } from '../config/api'; // updated to use apiClient
-import { GOOGLE_CONFIG } from '../config/constants';
+import { apiClient } from '../api';
+import { GOOGLE_CONFIG } from '../constants';
 import VoiceRecognitionModal from './VoiceRecognitionModal';
 
 interface SpeedDialFABProps {
@@ -166,7 +166,7 @@ const SpeedDialFAB: React.FC<SpeedDialFABProps> = ({ onMic, onPhoto, onManual })
             text: 'OK',
             onPress: () => {
               // Переходим на главную страницу вкладок
-              router.replace('/(tabs)/index');
+              router.replace('/');
             }
           }
         ]

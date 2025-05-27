@@ -1,6 +1,9 @@
 // app/(modals)/AddTransactionModalProps.tsx
+import { apiClient } from '@/api';
 import Typo from '@/components/Typo';
 import { colors } from '@/constants/theme';
+import apiService from '@/services/api';
+import { Category } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
@@ -13,8 +16,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import apiService from '../services/api';
-import { Category } from '../types/index';
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -42,24 +43,24 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const fetchCategories = async () => {
     try {
-      const fetchedCategories = await apiService.getCategories();
-      setCategories(fetchedCategories);
+      const response = await apiClient.get('/api/categories');
+      setCategories(response.data as Category[]);
     } catch (error) {
       console.error('Error fetching categories:', error);
       // Fallback categories if API fails
       setCategories([
-        { id: 1, name: 'Food', type: 'EXPENSE' },
-        { id: 2, name: 'Transportation', type: 'EXPENSE' },
-        { id: 3, name: 'Entertainment', type: 'EXPENSE' },
-        { id: 4, name: 'Utilities', type: 'EXPENSE' },
-        { id: 5, name: 'Healthcare', type: 'EXPENSE' },
-        { id: 6, name: 'Shopping', type: 'EXPENSE' },
-        { id: 7, name: 'Education', type: 'EXPENSE' },
-        { id: 8, name: 'Salary', type: 'INCOME' },
-        { id: 9, name: 'Investment', type: 'INCOME' },
-        { id: 10, name: 'Gift', type: 'INCOME' },
-        { id: 11, name: 'Other', type: 'INCOME' },
-        { id: 12, name: 'Other', type: 'EXPENSE' },
+        { id: 1, name: 'Food', type: 'EXPENSE', icon: 'fast-food-outline', color: '#FF6B6B' },
+        { id: 2, name: 'Transportation', type: 'EXPENSE', icon: 'car-outline', color: '#4ECDC4' },
+        { id: 3, name: 'Entertainment', type: 'EXPENSE', icon: 'film-outline', color: '#45B7D1' },
+        { id: 4, name: 'Utilities', type: 'EXPENSE', icon: 'bulb-outline', color: '#F9CA24' },
+        { id: 5, name: 'Healthcare', type: 'EXPENSE', icon: 'medical-outline', color: '#F0932B' },
+        { id: 6, name: 'Shopping', type: 'EXPENSE', icon: 'cart-outline', color: '#EB4D4B' },
+        { id: 7, name: 'Education', type: 'EXPENSE', icon: 'school-outline', color: '#6C5CE7' },
+        { id: 8, name: 'Salary', type: 'INCOME', icon: 'cash-outline', color: '#00B894' },
+        { id: 9, name: 'Investment', type: 'INCOME', icon: 'trending-up-outline', color: '#00CEC9' },
+        { id: 10, name: 'Gift', type: 'INCOME', icon: 'gift-outline', color: '#E17055' },
+        { id: 11, name: 'Other', type: 'INCOME', icon: 'list-outline', color: '#74B9FF' },
+        { id: 12, name: 'Other', type: 'EXPENSE', icon: 'list-outline', color: '#A29BFE' },
       ]);
     }
   };
@@ -91,7 +92,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
     setLoading(true);
     try {
-      await apiService.addTransaction({
+      await apiService.createTransaction({
         type,
         category,
         amount: amountValue,
@@ -228,7 +229,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       ]}
                     >
                       <Ionicons
-                        name={getCategoryIcon(cat.name)}
+                        name={getCategoryIcon(cat.name) as any}
                         size={18}
                         color={
                           category === cat.name ? colors.white : colors.primary

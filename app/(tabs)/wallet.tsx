@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Image, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { apiClient } from '../config/api';
-import { API_CONFIG } from '../config/constants';
+import { apiClient } from '../../api';
+import { API_CONFIG } from '../../constants';
 
 type Wallet = {
   id: number;

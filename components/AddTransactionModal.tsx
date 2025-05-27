@@ -1,3 +1,5 @@
+import { apiClient } from '@/api';
+import apiService from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
@@ -10,7 +12,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import apiService from '../services/api';
 import { Category, Wallet } from '../types';
 
 interface AddTransactionModalProps {
@@ -40,8 +41,8 @@ export default function AddTransactionModal({ visible, onClose, onTransactionAdd
 
   const loadCategories = async () => {
     try {
-      const fetchedCategories = await apiService.getCategories();
-      setCategories(fetchedCategories);
+      const response = await apiClient.get('/api/categories');
+      setCategories(response.data as Category[]); 
     } catch (error) {
       console.error('Error loading categories:', error);
     }
@@ -49,8 +50,8 @@ export default function AddTransactionModal({ visible, onClose, onTransactionAdd
 
   const loadWallets = async () => {
     try {
-      const fetchedWallets = await apiService.getWallets();
-      setWallets(fetchedWallets);
+      const response = await apiClient.get('/api/wallets');
+      setWallets(response.data as Wallet[]);
     } catch (error) {
       console.error('Error loading wallets:', error);
     }

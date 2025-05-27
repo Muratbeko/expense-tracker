@@ -3,8 +3,8 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { Stack } from "expo-router";
 import React, { useEffect } from "react";
 import { useColorScheme } from 'react-native';
-import { TransactionProvider } from './contexts/TransactionContext';
-import { configureNotifications } from './utils/notifications';
+import { TransactionProvider } from '../contexts/TransactionContext';
+import { configureNotifications } from '../utils/notifications';
 
 const StackLayout = () => {
   const colorScheme = useColorScheme();
@@ -34,7 +34,7 @@ const StackLayout = () => {
         }}
       />
       <Stack.Screen
-        name="screens/TransactionsScreen"
+        name="transactions"
         options={{
           headerShown: true,
           title: 'Transactions',

@@ -67,7 +67,8 @@
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "recharts": "^2.15.3",
-    "use-latest-callback": "^0.2.3"
+    "use-latest-callback": "^0.2.3",
+    "expo-secure-store": "~14.2.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { processReceipt, type ReceiptData } from './services/visionService';
+import { processReceipt, type ReceiptData } from '../services/visionService';
 
 export default function ReceiptScanner() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);

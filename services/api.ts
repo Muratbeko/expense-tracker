@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { apiClient } from '../config/api';
-import { API_CONFIG } from '../config/constants';
+import { apiClient } from '../api';
+import { API_CONFIG } from '../constants';
 import type {
   Budget,
   Category,
@@ -99,6 +99,34 @@ class ApiService {
       console.error('Profile update error:', error);
       this.handleApiError(error, 'Failed to update profile');
       throw error;
+    }
+  }
+
+  async logout(email?: string, password?: string): Promise<void> {
+    try {
+      console.log('Logging out user:', email || 'unknown');
+      
+      // Prepare logout data
+      const logoutData: any = {
+        timestamp: new Date().toISOString()
+      };
+      
+      // Include email and password if provided
+      if (email) {
+        logoutData.email = email;
+      }
+      if (password) {
+        logoutData.password = password;
+      }
+      
+      // Call the server logout endpoint
+      const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.AUTH}/logout`, logoutData);
+      
+      console.log('Server logout successful:', response.status);
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      // Don't throw error for logout - allow local logout to proceed
+      console.warn('Server logout failed, proceeding with local logout');
     }
   }
 
@@ -262,7 +290,7 @@ class ApiService {
         ? `${API_CONFIG.ENDPOINTS.CATEGORIES}?type=${type}` 
         : API_CONFIG.ENDPOINTS.CATEGORIES;
       const response = await apiClient.get<Category[]>(url);
-      return response.data.map(cat => ({
+      return response.data.map((cat: any) => ({
         id: cat.id,
         name: String(cat.name),
         type: cat.type,
@@ -503,14 +531,18 @@ class ApiService {
       monthlyTransactions
         .filter(txn => txn.type === 'EXPENSE' && txn.category)
         .forEach(txn => {
-          const current = categoryTotals.get(txn.category as string) || 0;
-          categoryTotals.set(txn.category as string, current + txn.amount);
+          // Handle both string and object categories
+          const categoryName = typeof txn.category === 'object' && txn.category !== null
+            ? (txn.category as any).name || 'Unknown Category'
+            : String(txn.category);
+          const current = categoryTotals.get(categoryName) || 0;
+          categoryTotals.set(categoryName, current + txn.amount);
         });
 
       const categoryBreakdown = Array.from(categoryTotals.entries()).map(([category, amount]) => ({
         category,
         amount,
-        percentage: (amount / totalExpenses) * 100
+        percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
       }));
 
       // Generate recommendations based on spending patterns

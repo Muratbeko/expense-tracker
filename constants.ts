@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8080',
+  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || `http://${process.env.EXPO_PUBLIC_HOST_IP}:8080`,
   TIMEOUT: parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '10000'),
   ENDPOINTS: {
     AUTH: '/api/auth',
@@ -14,7 +14,8 @@ export const API_CONFIG = {
     WALLETS: '/api/wallets',
     NOTIFICATIONS: '/api/notifications',
     FORECAST: '/api/forecast',
-    IMAGES: '/images'
+    IMAGES: '/images',
+    ACCOUNTS: '/api/accounts'
   }
 };
 
@@ -29,7 +30,7 @@ export const GOOGLE_CONFIG = {
 // Server Configuration
 export const SERVER_CONFIG = {
   PORT: process.env.SERVER_PORT || 8080,
-  CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:8080'
+  CORS_ORIGIN: process.env.CORS_ORIGIN || `http://${process.env.EXPO_PUBLIC_HOST_IP}:8080`
 };
 
 // App Configuration

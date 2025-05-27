@@ -1,10 +1,10 @@
-import { processReceipt, ReceiptData } from '@/app/services/visionService';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { processReceipt, type ReceiptData } from './services/visionService';
 
 export default function ReceiptScanner() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -71,20 +71,20 @@ export default function ReceiptScanner() {
     }
   };
 
-    const processImage = async (): Promise<void> => {
+  const processImage = async (): Promise<void> => {
     if (!capturedImage) return;
 
     setIsProcessing(true);
     try {
       console.log('Начинаем обработку изображения:', capturedImage);
       const receiptData: ReceiptData = await processReceipt(capturedImage);
-      
+
       console.log('Данные чека:', receiptData);
-      
+
       // Проверяем, что получили корректные данные
       if (receiptData.amount === 0 && receiptData.description === 'Ошибка сканирования') {
         Alert.alert(
-          'Ошибка сканирования', 
+          'Ошибка сканирования',
           'Не удалось обработать чек. Попробуйте другое изображение или введите данные вручную.',
           [
             { text: 'OK', onPress: () => setCapturedImage(null) }
@@ -92,7 +92,7 @@ export default function ReceiptScanner() {
         );
         return;
       }
-      
+
       // Навигация обратно с данными
       router.push({
         pathname: '/add-transaction',
@@ -109,7 +109,7 @@ export default function ReceiptScanner() {
       console.error('Ошибка обработки изображения:', error);
       const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       Alert.alert(
-        'Ошибка обработки', 
+        'Ошибка обработки',
         `Произошла ошибка при обработке чека: ${errorMessage}. Попробуйте снова.`,
         [
           { text: 'OK', onPress: () => setCapturedImage(null) }

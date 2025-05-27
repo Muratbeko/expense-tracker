@@ -33,7 +33,7 @@ const LoginScreen = () => {
       await login(email.trim(), password);
       
       console.log('Login screen: Login successful, navigating');
-      router.replace('/(tabs)/index');
+      router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Login screen error:', error);
       Alert.alert('Login Failed', error.message || 'Please try again');

@@ -1,13 +1,14 @@
+import { Transaction } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useTransaction } from './contexts/TransactionContext';
+import { useTransaction } from '../contexts/TransactionContext';
 
 export default function AddTransactionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { addTransaction } = useTransaction();
+  const { addTransaction } = useTransaction() as { addTransaction: (transaction: Transaction) => Promise<void> };
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -18,19 +19,19 @@ export default function AddTransactionScreen() {
     if (params) {
       if (params.amount) {
         console.log('Устанавливаем сумму:', params.amount);
-        setAmount(params.amount);
+        setAmount(params.amount as string);
       }
       if (params.description) {
         console.log('Устанавливаем описание:', params.description);
-        setDescription(params.description);
+        setDescription(params.description as string);
       }
       if (params.category) {
-        console.log('Устанавливаем категорию:', params.category);
-        setCategory(params.category);
+        console.log('Устанавливаем категорию:', params.category as string);
+        setCategory(params.category as string);
       }
       if (params.type) {
         console.log('Устанавливаем тип:', params.type);
-        setType(params.type);
+        setType(params.type as string);
       }
     }
   }, [params]);
@@ -70,7 +71,7 @@ export default function AddTransactionScreen() {
       console.log('Создаем транзакцию:', newTransaction);
       
       // Добавляем транзакцию и ждем завершения
-      const result = await addTransaction(newTransaction);
+      const result = await addTransaction(newTransaction as Transaction);
       
       if (result) {
         console.log('Транзакция успешно добавлена');

@@ -15,6 +15,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { apiClient } from '../../api';
+import { API_CONFIG } from '../../constants';
 
 interface Category {
   id: number;
@@ -40,19 +42,8 @@ const NewExpense = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/categories/expense', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch categories');
-      }
-
-      const data = await response.json();
-      setCategories(data);
+      const response = await apiClient.get<Category[]>(`${API_CONFIG.ENDPOINTS.CATEGORIES}/expense`);
+      setCategories(response.data);
     } catch (error) {
       console.error('Error fetching categories:', error);
       Alert.alert('Error', 'Failed to load categories');
@@ -98,27 +89,18 @@ const NewExpense = () => {
 
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8080/api/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: parseFloat(amount),
-          categoryId: selectedCategory.id,
-          type: 'EXPENSE',
-          date: date.toISOString().split('T')[0],
-          note: note,
-        }),
+      await apiClient.post(API_CONFIG.ENDPOINTS.TRANSACTIONS, {
+        amount: parseFloat(amount),
+        categoryId: selectedCategory.id,
+        type: 'EXPENSE',
+        date: date.toISOString().split('T')[0],
+        note: note,
+        walletId: 1
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to save expense');
-      }
 
       Alert.alert('Success', 'Expense saved successfully');
       router.back();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving expense:', error);
       Alert.alert('Error', 'Failed to save expense');
     } finally {

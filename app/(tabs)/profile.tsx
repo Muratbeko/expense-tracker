@@ -2,13 +2,13 @@ import ScreenWrapper from '@/components/ScreenWrapper'
 import Typo from '@/components/Typo'
 import { colors, radius, spacingX, spacingY } from '@/constants/theme'
 import { useAuth } from '@/contexts/AuthContext'
-import { accountOptionType } from '@/types'
 import { verticalScale } from '@/utils/styling'
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import React, { useEffect } from 'react'
 import { Alert, Platform, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { accountOptionType } from '../types'
 
 const Profile = () => {
   const { user, logout } = useAuth()
@@ -22,7 +22,7 @@ const Profile = () => {
     console.log('Profile page - User imageUrl:', user?.imageUrl)
     
     if (user?.imageUrl) {
-      const fullImageUrl = `http://localhost:8080/images/view/${user.imageUrl}`
+      const fullImageUrl = `http://${process.env.EXPO_PUBLIC_HOST_IP}:8080/images/view/${user.imageUrl}`
       console.log('Profile page - Full image URL:', fullImageUrl)
     }
   }, [user])
@@ -125,7 +125,7 @@ const Profile = () => {
   // Create the image source with proper URL formatting
   const getImageSource = () => {
     if (user?.imageUrl) {
-      const fullUrl = `http://localhost:8080/images/view/${user.imageUrl}`
+      const fullUrl = `http://${process.env.EXPO_PUBLIC_HOST_IP}:8080/images/view/${user.imageUrl}`
       console.log('Using image URL:', fullUrl)
       return { uri: fullUrl }
     }
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacingX._15,
-    paddingVertical: spacingY._16,
-    paddingHorizontal: spacingX._16,
+    paddingVertical: spacingY._15,
+    paddingHorizontal: spacingX._15,
   },
 })

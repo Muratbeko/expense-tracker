@@ -1,16 +1,16 @@
+import apiService from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import apiService from '../../services/api';
 
 export default function AddTransactionScreen() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function AddTransactionScreen() {
         walletId: '1' // This should come from user's selected wallet
       };
 
-      await apiService.createTransaction(transaction);
+      await apiService.createTransaction(transaction as any);
       router.back();
     } catch (error) {
       Alert.alert('Error', 'Failed to create transaction');

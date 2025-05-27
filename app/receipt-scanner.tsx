@@ -4,14 +4,14 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { processReceipt } from './services/visionService';
+import { processReceipt, type ReceiptData } from '../services/visionService';
 
 export default function ReceiptScanner() {
-  const [capturedImage, setCapturedImage] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
 
-  const pickImage = async () => {
+  const pickImage = async (): Promise<void> => {
     try {
       // Запрашиваем разрешение на доступ к галерее
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -38,13 +38,14 @@ export default function ReceiptScanner() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setCapturedImage(result.assets[0].uri);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Ошибка при выборе изображения:', error);
-      Alert.alert('Ошибка', 'Не удалось выбрать изображение');
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      Alert.alert('Ошибка', `Не удалось выбрать изображение: ${errorMessage}`);
     }
   };
 
-  const takePhoto = async () => {
+  const takePhoto = async (): Promise<void> => {
     try {
       // Запрашиваем разрешение на доступ к камере
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -63,26 +64,27 @@ export default function ReceiptScanner() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setCapturedImage(result.assets[0].uri);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Ошибка при фотографировании:', error);
-      Alert.alert('Ошибка', 'Не удалось сделать фото');
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      Alert.alert('Ошибка', `Не удалось сделать фото: ${errorMessage}`);
     }
   };
 
-  const processImage = async () => {
+  const processImage = async (): Promise<void> => {
     if (!capturedImage) return;
 
     setIsProcessing(true);
     try {
       console.log('Начинаем обработку изображения:', capturedImage);
-      const receiptData = await processReceipt(capturedImage);
-      
+      const receiptData: ReceiptData = await processReceipt(capturedImage);
+
       console.log('Данные чека:', receiptData);
-      
+
       // Проверяем, что получили корректные данные
       if (receiptData.amount === 0 && receiptData.description === 'Ошибка сканирования') {
         Alert.alert(
-          'Ошибка сканирования', 
+          'Ошибка сканирования',
           'Не удалось обработать чек. Попробуйте другое изображение или введите данные вручную.',
           [
             { text: 'OK', onPress: () => setCapturedImage(null) }
@@ -90,7 +92,7 @@ export default function ReceiptScanner() {
         );
         return;
       }
-      
+
       // Навигация обратно с данными
       router.push({
         pathname: '/add-transaction',
@@ -103,11 +105,12 @@ export default function ReceiptScanner() {
           type: 'EXPENSE',
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Ошибка обработки изображения:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       Alert.alert(
-        'Ошибка обработки', 
-        'Произошла ошибка при обработке чека. Попробуйте снова.',
+        'Ошибка обработки',
+        `Произошла ошибка при обработке чека: ${errorMessage}. Попробуйте снова.`,
         [
           { text: 'OK', onPress: () => setCapturedImage(null) }
         ]
@@ -166,7 +169,7 @@ export default function ReceiptScanner() {
         <View style={styles.content}>
           <Text style={styles.title}>Сканирование чека</Text>
           <Text style={styles.subtitle}>Сфотографируйте чек или выберите изображение из галереи</Text>
-          
+
           <View style={styles.buttonsContainer}>
             <TouchableOpacity
               style={styles.actionButton}
@@ -175,7 +178,7 @@ export default function ReceiptScanner() {
               <Ionicons name="camera" size={32} color="white" />
               <Text style={styles.actionButtonText}>Сфотографировать</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.actionButton}
               onPress={pickImage}

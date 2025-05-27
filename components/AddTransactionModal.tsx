@@ -1,18 +1,18 @@
+import { apiClient } from '@/api';
+import apiService from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Category, categoryService } from '../services/categoryService';
-import { transactionService } from '../services/transactionService';
-import { Wallet, walletService } from '../services/walletService';
+import { Category, Wallet } from '../types';
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -41,8 +41,8 @@ export default function AddTransactionModal({ visible, onClose, onTransactionAdd
 
   const loadCategories = async () => {
     try {
-      const fetchedCategories = await categoryService.getAllCategories();
-      setCategories(fetchedCategories);
+      const response = await apiClient.get('/api/categories');
+      setCategories(response.data as Category[]); 
     } catch (error) {
       console.error('Error loading categories:', error);
     }
@@ -50,8 +50,8 @@ export default function AddTransactionModal({ visible, onClose, onTransactionAdd
 
   const loadWallets = async () => {
     try {
-      const fetchedWallets = await walletService.getAllWallets();
-      setWallets(fetchedWallets);
+      const response = await apiClient.get('/api/wallets');
+      setWallets(response.data as Wallet[]);
     } catch (error) {
       console.error('Error loading wallets:', error);
     }
@@ -80,11 +80,11 @@ export default function AddTransactionModal({ visible, onClose, onTransactionAdd
         walletId: selectedWallet.id,
       };
 
-      await transactionService.addTransaction(transaction);
-      
+      await apiService.createTransaction(transaction);
+
       // Update wallet balance
       const balanceChange = type === 'INCOME' ? transaction.amount : -transaction.amount;
-      await walletService.updateWalletBalance(selectedWallet.id, balanceChange);
+      await apiService.updateWallet(selectedWallet.id, { balance: balanceChange });
 
       setAmount('');
       setDescription('');
@@ -106,7 +106,7 @@ export default function AddTransactionModal({ visible, onClose, onTransactionAdd
     }
 
     try {
-      const newCategory = await categoryService.createCategory({
+      const newCategory = await apiService.createCategory({
         name: newCategoryName,
         icon: newCategoryIcon,
         color: '#000000',

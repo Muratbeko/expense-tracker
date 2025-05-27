@@ -5,6 +5,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { apiClient } from '../../api';
+import { API_CONFIG } from '../../constants';
 
 type Wallet = {
   id?: number;
@@ -27,7 +29,7 @@ export default function WalletFormModal() {
       setExistingWallet(parsed);
       setName(parsed.name);
       if (parsed.imageUrl) {
-        const fullImageUrl = `http://localhost:8080/images/view/${parsed.imageUrl}`;
+        const fullImageUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.IMAGES}/view/${parsed.imageUrl}`;
         console.log('Setting image URL:', fullImageUrl);
         setImage({ uri: fullImageUrl });
         console.log('Image state set:', { uri: fullImageUrl });
@@ -68,19 +70,15 @@ export default function WalletFormModal() {
     } as any);
 
     try {
-      const response = await fetch('http://localhost:8080/api/wallets/upload', {
-        method: 'POST',
-        body: formData,
+      const response = await apiClient.post<string>(`${API_CONFIG.ENDPOINTS.WALLETS}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-
-      if (!response.ok) throw new Error('Upload failed');
-      const imageUrl = await response.text();
-      return imageUrl;
-    } catch (error) {
-      console.error(error);
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Upload error:', error);
       return null;
     }
   };
@@ -93,7 +91,7 @@ export default function WalletFormModal() {
 
     let imageUrl = existingWallet?.imageUrl || null;
 
-    if (image && (!existingWallet || image.uri !== `http://localhost:8080/images/view/${existingWallet.imageUrl}`)) {
+    if (image && (!existingWallet || image.uri !== `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.IMAGES}/view/${existingWallet.imageUrl}`)) {
       const uploaded = await uploadImage();
       if (uploaded) imageUrl = uploaded;
     }
@@ -102,20 +100,14 @@ export default function WalletFormModal() {
     console.log('Saving wallet with data:', walletData);
 
     try {
-      const url = existingWallet
-        ? `http://localhost:8080/api/wallets/${existingWallet.id}`
-        : 'http://localhost:8080/api/wallets';
-      const method = existingWallet ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(walletData),
-      });
-
-      console.log('Save response status:', response.status);
+      if (existingWallet) {
+        await apiClient.put(`${API_CONFIG.ENDPOINTS.WALLETS}/${existingWallet.id}`, walletData);
+      } else {
+        await apiClient.post(API_CONFIG.ENDPOINTS.WALLETS, walletData);
+      }
+      
       handleClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save error:', error);
       Alert.alert('Ошибка', 'Не удалось сохранить');
     }
@@ -137,11 +129,9 @@ export default function WalletFormModal() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await fetch(`http://localhost:8080/api/wallets/${existingWallet.id}`, {
-                method: 'DELETE',
-              });
+              await apiClient.delete(`${API_CONFIG.ENDPOINTS.WALLETS}/${existingWallet.id}`);
               handleClose();
-            } catch (e) {
+            } catch (error: any) {
               Alert.alert('Ошибка', 'Не удалось удалить кошелек');
             }
           },

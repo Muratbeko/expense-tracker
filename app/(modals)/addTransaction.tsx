@@ -25,9 +25,10 @@ const AddTransaction = () => {
       await apiService.createTransaction({
         amount: parseFloat(amount),
         description,
-        type: type.toUpperCase(),
+        type: type.toUpperCase() as 'EXPENSE' | 'INCOME',
         date: new Date().toISOString(),
-        walletId: '1', // TODO: Get this from user's selected wallet
+        walletId: 1, // TODO: Get this from user's selected wallet
+        category: 'Food',
       })
       router.back()
     } catch (error) {

@@ -1,6 +1,5 @@
 // screens/ForecastScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -16,24 +15,13 @@ import {
   View,
 } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
+import { apiClient } from '../../api';
+import { API_CONFIG, GOOGLE_CONFIG } from '../../constants';
 
 const screenWidth = Dimensions.get('window').width;
 
-// Замените на ваш Gemini API ключ
-const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
-
 // API configuration
-const API_BASE_URL = 'http://localhost:8080';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
-  }
-});
+const GEMINI_API_URL = `${GOOGLE_CONFIG.GEMINI_API_URL}?key=${GOOGLE_CONFIG.GEMINI_API_KEY}`;
 
 interface Transaction {
   id: number;
@@ -108,22 +96,24 @@ export default function ForecastScreen() {
 
   const fetchTransactions = async () => {
     try {
-      const response = await api.get('/transactions');
+      const response = await apiClient.get<Transaction[]>(API_CONFIG.ENDPOINTS.TRANSACTIONS);
       const allTransactions = response.data || [];
       
       // Фильтруем только расходы за последние 6 месяцев для анализа
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       
-      const recentTransactions = allTransactions.filter((tx: any) => {
+      const recentTransactions = allTransactions.filter((tx: Transaction) => {
         const txDate = new Date(tx.date);
         return txDate >= sixMonthsAgo;
-      }).map((tx: any) => ({
+      }).map((tx: Transaction) => ({
         id: tx.id,
         type: tx.type,
         amount: tx.amount,
         description: tx.description,
-        category: typeof tx.category === 'object' ? tx.category?.name || 'Other' : tx.category,
+        category: typeof tx.category === 'string' 
+          ? tx.category 
+          : (tx.category as any)?.name || 'Other',
         date: tx.date
       }));
 
@@ -216,26 +206,29 @@ export default function ForecastScreen() {
         }
       `;
 
-      const response = await fetch(GEMINI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+      interface GeminiResponse {
+        candidates?: Array<{
+          content?: {
+            parts?: Array<{
+              text?: string;
+            }>;
+          };
+        }>;
       }
 
-      const data = await response.json();
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const response = await apiClient.post<GeminiResponse>(GEMINI_API_URL, {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      });
+
+      if (!response.data) {
+        throw new Error('No response from Gemini API');
+      }
+
+      const aiResponse = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (!aiResponse) {
         throw new Error('No response from Gemini AI');

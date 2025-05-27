@@ -4,11 +4,23 @@ import { ActivityIndicator, Modal, StyleSheet, Text, TextInput, TouchableOpacity
 
 // Для iOS/Android используем Picker из @react-native-picker/picker
 import { Picker } from '@react-native-picker/picker';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from '../api';
 
-export default function TopUpModal({ visible, onClose, goal, onSuccess }) {
-  const [wallets, setWallets] = useState([]);
-  const [walletId, setWalletId] = useState(null);
+interface TopUpModalProps {
+  visible: boolean;
+  onClose: () => void;
+  goal: { id: number; name: string };
+  onSuccess: () => void;
+}
+
+interface Wallet {
+  id: number;
+  name: string;
+}
+
+export default function TopUpModal({ visible, onClose, goal, onSuccess }: TopUpModalProps) {
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [walletId, setWalletId] = useState<number | null>(null);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -22,7 +34,7 @@ export default function TopUpModal({ visible, onClose, goal, onSuccess }) {
   const fetchWallets = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/api/wallets`);
+      const res = await axios.get<Wallet[]>(`${API_BASE_URL}/api/wallets`);
       setWallets(res.data);
       if (res.data.length > 0) setWalletId(res.data[0].id);
     } catch (e) {

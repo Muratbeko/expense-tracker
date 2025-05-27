@@ -1,10 +1,8 @@
-
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image } from 'react-native';
+import { Image, RefreshControl } from 'react-native';
 
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import {
@@ -21,21 +19,11 @@ import {
 import { AddGoalModal } from '../(modals)/AddGoalModal';
 import { AddTransactionModal } from '../(modals)/AddTransactionModal';
 import { EditBudgetModal } from '../(modals)/EditBudgetModal';
-import type { TransactionType } from '../../types';
-import { BudgetNotification } from '../components/BudgetNotification';
-import TopUpModal from '../components/TopUpModal';
-import { API_BASE_URL } from '../config/api';
-
-
-// Create axios instance with base configuration
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
-  }
-});
+import { apiClient } from '../../api';
+import { BudgetNotification } from '../../components/BudgetNotification';
+import TopUpModal from '../../components/TopUpModal';
+import { API_CONFIG } from '../../constants';
+import { TransactionType } from '../../types';
 
 interface SavingGoal {
   id?: number;
@@ -83,9 +71,10 @@ export default function Home() {
   const [isAddTransactionVisible, setIsAddTransactionVisible] = useState(false);
   const [isAddGoalVisible, setIsAddGoalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  
+
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -102,26 +91,61 @@ export default function Home() {
     try {
       setLoading(true);
       console.log('Starting to fetch all data');
-      
+
       const email = await AsyncStorage.getItem('userEmail');
       console.log('User email in fetchAllData:', email || 'Not found');
-      
+
       if (!email) {
         console.error('No user email found');
         return;
       }
 
       // Fetch all data in parallel
-      const [transactions, budget, goals] = await Promise.all([
-        api.get('/transactions'),
-        api.get('/budgets/current'),
-        api.get('/goals')
+      const [transactionsRes, budgetRes, goalsRes, accountBalanceRes] = await Promise.all([
+        apiClient.get(API_CONFIG.ENDPOINTS.TRANSACTIONS),
+        apiClient.get(API_CONFIG.ENDPOINTS.BUDGETS + '/current'),
+        apiClient.get(API_CONFIG.ENDPOINTS.GOALS),
+        apiClient.get(API_CONFIG.ENDPOINTS.ACCOUNTS + '/balance')
       ]);
 
-      setTransactions(transactions.data);
-      setBudget(budget.data as Budget);
-      setSavingGoals(goals.data);
+      // Process transactions data
+      if (Array.isArray(transactionsRes.data)) {
+        const allTxns = transactionsRes.data.map((tx: any) => {
+          const categoryName = tx.category?.name || 'Uncategorized';
+          return {
+            id: tx.id,
+            type: tx.type,
+            amount: tx.amount,
+            description: tx.description,
+            category: categoryName,
+            date: tx.date,
+            walletId: tx.wallet?.id
+          };
+        });
+
+        const sortedTransactions = allTxns.sort((a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        setAllTransactions(sortedTransactions);
+        setTransactions(sortedTransactions.slice(0, 5));
+      } else {
+        setTransactions([]);
+        setAllTransactions([]);
+      }
+
+      // Set budget data
+      setBudget(budgetRes.data as Budget);
       
+      // Set saving goals data
+      setSavingGoals(goalsRes.data as SavingGoal[] || []);
+
+      // Set account balance data
+      const balanceData = accountBalanceRes.data as { balance: number; income: number; expenses: number };
+      setBalance(balanceData.balance || 0);
+      setIncome(balanceData.income || 0);
+      setExpenses(balanceData.expenses || 0);
+
       console.log('All data fetched successfully');
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -130,106 +154,46 @@ export default function Home() {
         await AsyncStorage.removeItem('userEmail');
         router.replace('/(auth)/login');
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const fetchAccountBalance = async () => {
-    try {
-      const response = await api.get('/accounts/balance');
-      const data = response.data as { balance: number; income: number; expenses: number };
-      setBalance(data.balance || 0);
-      setIncome(data.income || 0);
-      setExpenses(data.expenses || 0);
-    } catch (error) {
-      console.error('Error fetching account balance:', error);
-      // Set default values instead of throwing
+      // Set default values on error
       setBalance(0);
       setIncome(0);
       setExpenses(0);
-    }
-  };
-  
-  const fetchBudget = async () => {
-    try {
-      const response = await api.get('/budgets/current');
-      setBudget(response.data as Budget);
-    } catch (error) {
-      console.error('Error fetching budget:', error);
       setBudget(null);
+      setSavingGoals([]);
+      setTransactions([]);
+      setAllTransactions([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
-  
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchAllData();
+  };
+
+  // Individual fetch functions are now integrated into fetchAllData for better efficiency
+
   const createDefaultBudget = async () => {
     try {
       const currentDate = new Date();
-      const response = await api.post('/budgets', {
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.BUDGETS, {
         month: currentDate.toLocaleString('default', { month: 'long' }),
         year: currentDate.getFullYear(),
         total: 1000,
         spent: 0
       });
-      setBudget(response.data as Budget);
       Alert.alert('Success', 'Budget created! You can now edit it.');
+      // Refresh all data to show the new budget
+      await fetchAllData();
     } catch (error) {
       console.error('Error creating budget:', error);
       Alert.alert('Error', 'Failed to create budget. Please try again.');
     }
   };
-  
-  const fetchSavingGoals = async () => {
-    try {
-      const response = await api.get('/goals');
-      setSavingGoals(response.data as SavingGoal[] || []);
-    } catch (error) {
-      console.error('Error fetching saving goals:', error);
-      setSavingGoals([]);
-    }
-  };
-  
-  const fetchTransactions = async () => {
-    try {
-      console.log('Fetching transactions...');
-      const response = await api.get('/transactions');
-      
-      if (!Array.isArray(response.data)) {
-        console.error('Invalid transactions data format:', response.data);
-        setTransactions([]);
-        setAllTransactions([]);
-        return;
-      }
 
-      // Преобразуем данные в нужный формат, избегая циклических ссылок
-      const allTxns = response.data.map((tx: any) => {
-        // Извлекаем только нужные данные из категории
-        const categoryName = tx.category?.name || 'Uncategorized';
-        
-        return {
-          id: tx.id,
-          type: tx.type,
-          amount: tx.amount,
-          description: tx.description,
-          category: categoryName,
-          date: tx.date,
-          walletId: tx.wallet?.id
-        };
-      });
-
-      // Sort transactions by date (newest first)
-      const sortedTransactions = allTxns.sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      
-      console.log('Processed transactions:', sortedTransactions);
-      setAllTransactions(sortedTransactions);
-      setTransactions(sortedTransactions.slice(0, 5)); // Show only 5 recent
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      setTransactions([]);
-      setAllTransactions([]);
-    }
-  };
+  // fetchSavingGoals and fetchTransactions are now integrated into fetchAllData for better efficiency
 
   const handleEditBudget = () => {
     if (!budget) {
@@ -246,18 +210,20 @@ export default function Home() {
         Alert.alert('Error', 'No budget to update');
         return;
       }
-      
+
       if (!newBudgetTotal || newBudgetTotal <= 0) {
         Alert.alert('Error', 'Please enter a valid budget amount');
         return;
       }
-      
-      const response = await api.put(`/budgets/${budget.id}`, {
+
+      const response = await apiClient.put(`/budgets/${budget.id}`, {
         total: newBudgetTotal
       });
       setBudget(response.data as Budget);
       setIsEditModalVisible(false);
       Alert.alert('Success', 'Budget updated successfully');
+      // Refresh all data to ensure consistency
+      await fetchAllData();
     } catch (error) {
       console.error('Error updating budget:', error);
       Alert.alert('Error', 'Failed to update budget. Please try again.');
@@ -282,10 +248,11 @@ export default function Home() {
         imageUrl: goalData.imageUrl || null
       };
 
-      const response = await api.post('/goals', payload);
-      setSavingGoals([...savingGoals, response.data as SavingGoal]);
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.GOALS, payload);
       setIsAddGoalVisible(false);
       Alert.alert('Success', 'Goal added successfully!');
+      // Refresh all data to get the latest goals list
+      await fetchAllData();
     } catch (error) {
       console.error('Error adding goal:', error);
       Alert.alert('Error', 'Failed to add goal. Please try again.');
@@ -299,13 +266,12 @@ export default function Home() {
     }
 
     try {
-      const response = await api.put(`/goals/${goalId}`, {
+      const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.GOALS}/${goalId}`, {
         currentAmount: newAmount
       });
-      setSavingGoals(savingGoals.map((goal): SavingGoal => 
-        goal.id === goalId ? response.data as SavingGoal : goal
-      ));
       Alert.alert('Success', 'Goal updated successfully');
+      // Refresh all data to ensure consistency
+      await fetchAllData();
     } catch (error) {
       console.error('Error updating goal:', error);
       Alert.alert('Error', 'Failed to update goal. Please try again.');
@@ -314,9 +280,10 @@ export default function Home() {
 
   const deleteGoal = async (goalId: number) => {
     try {
-      await api.delete(`/goals/${goalId}`);
-      setSavingGoals(savingGoals.filter(goal => goal.id !== goalId));
+      await apiClient.delete(`${API_CONFIG.ENDPOINTS.GOALS}/${goalId}`);
       Alert.alert('Success', 'Goal deleted successfully');
+      // Refresh all data to ensure the goal is removed from the UI
+      await fetchAllData();
     } catch (error) {
       console.error('Error deleting goal:', error);
       Alert.alert('Error', 'Failed to delete goal. Please try again.');
@@ -347,10 +314,10 @@ export default function Home() {
     } else if (transactionDateOnly.getTime() === yesterdayOnly.getTime()) {
       return 'Yesterday';
     } else {
-      return transactionDate.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'short', 
-        day: 'numeric' 
+      return transactionDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric'
       });
     }
   };
@@ -367,11 +334,17 @@ export default function Home() {
   };
 
   const handleSeeAllTransactions = () => {
-    router.push('/screens/TransactionsScreen');
+    // Refresh data before navigating to ensure consistency
+    fetchAllData().then(() => {
+      router.push('/screens/TransactionsScreen');
+    });
   };
 
   const handleSeeAllGoals = () => {
-    router.push('/screens/SavingGoalScreen');
+    // Refresh data before navigating to ensure consistency
+    fetchAllData().then(() => {
+      router.push('/screens/SavingGoalScreen');
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -395,71 +368,24 @@ export default function Home() {
   // Fixed function to properly construct image URLs
   const getGoalImageUrl = (goal: SavingGoal): string | null => {
     if (!goal.imageUrl) return null;
-    
+
     // If it's already a full URL, return as is
     if (goal.imageUrl.startsWith('http')) {
       return goal.imageUrl;
     }
-    
+
     // Otherwise, construct the full URL with the API base
-    return `${API_BASE_URL}/goals/images/${goal.imageUrl}`;
+    return `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.GOALS}/images/${goal.imageUrl}`;
   };
 
-  const renderBudget = () => {
-    if (!budget) {
-      return (
-        <View>
-          <Text style={styles.budgetText}>No budget set for this month</Text>
-          <TouchableOpacity 
-            style={styles.createBudgetButton}
-            onPress={createDefaultBudget}
-          >
-            <Text style={styles.createBudgetText}>Create Budget</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-  
-    if (typeof budget.total !== 'number' || typeof budget.spent !== 'number') {
-      return (
-        <Text style={styles.budgetText}>Invalid budget data</Text>
-      );
-    }
-  
-    return (
-      <>
-        <Text style={styles.budgetText}>
-          {formatCurrency(budget.spent)} of {formatCurrency(budget.total)}
-        </Text>
-        <View style={styles.progressContainer}>
-          <View 
-            style={[
-              styles.progressBar,
-              { 
-                width: `${Math.min((budget.spent / budget.total) * 100, 100)}%`,
-                backgroundColor: budget.spent > budget.total ? '#F44336' : '#5E35B1'
-              }
-            ]} 
-          />
-        </View>
-        <Text style={[
-          styles.percentageText,
-          { color: budget.spent > budget.total ? '#F44336' : '#757575' }
-        ]}>
-          {((budget.spent / budget.total) * 100).toFixed(1)}% used
-          {budget.spent > budget.total && ' - Over budget!'}
-        </Text>
-      </>
-    );
-  };
 
   const renderTransactionItem = (transaction: TransactionType) => (
     <View key={transaction.id} style={styles.transactionItem}>
       <View style={styles.transactionInfo}>
         <Text style={styles.transactionDescription}>{transaction.description}</Text>
         <Text style={styles.transactionCategory}>
-          {typeof transaction.category === 'object' && transaction.category !== null 
-            ? (transaction.category as { name: string }).name 
+          {typeof transaction.category === 'object' && transaction.category !== null
+            ? (transaction.category as { name: string }).name
             : String(transaction.category)}
         </Text>
       </View>
@@ -474,7 +400,7 @@ export default function Home() {
 
   const renderTransactions = () => {
     const transactionsToShow = showAllTransactions ? allTransactions : transactions;
-    
+
     if (!Array.isArray(transactionsToShow) || transactionsToShow.length === 0) {
       return <Text style={styles.noDataText}>No transactions yet</Text>;
     }
@@ -498,11 +424,48 @@ export default function Home() {
     );
   }
 
+  function renderBudget() {
+    if (budget) {
+      return (
+        <>
+          <Text style={styles.budgetText}>
+            Budget: ${budget.total} | Spent: ${budget.spent}
+          </Text>
+          <View style={styles.progressContainer}>
+            <View
+              style={[
+                styles.progressBar,
+                { width: `${Math.min((budget.spent / budget.total) * 100, 100)}%`, backgroundColor: '#5E35B1' }
+              ]}
+            />
+          </View>
+          <Text style={styles.percentageText}>
+            {Math.round((budget.spent / budget.total) * 100)}% used
+          </Text>
+        </>
+      );
+    } else {
+      return (
+        <View>
+          <Text style={styles.budgetText}>No budget set</Text>
+          <TouchableOpacity style={styles.createBudgetButton} onPress={createDefaultBudget}>
+            <Text style={styles.createBudgetText}>Create Budget</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+  }
+
   return (
     <NotificationProvider>
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {error && (
             <View style={styles.errorBanner}>
               <Text style={styles.errorBannerText}>{error}</Text>
@@ -536,7 +499,7 @@ export default function Home() {
               </View>
             </View>
           </View>
-          
+
           {/* Budget Progress */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
@@ -550,28 +513,28 @@ export default function Home() {
 
           {/* Feature Categories */}
           <View style={styles.categoriesGrid}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.categorySquare}
               onPress={() => router.push('/screens/SpendingByCategoryScreen')}
             >
               <Ionicons name="pie-chart" size={28} color="#5E35B1" />
               <Text style={styles.categoryText}>Spending by Categories</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.categorySquare}
               onPress={() => router.push('/(tabs)/monthly-report')}
             >
               <Ionicons name="bar-chart" size={28} color="#5E35B1" />
               <Text style={styles.categoryText}>Budget Reports</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.categorySquare}
               onPress={() => router.push('/screens/ForecastScreen')}
             >
               <Ionicons name="trending-up" size={28} color="#5E35B1" />
               <Text style={styles.categoryText}>Forecast</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.categorySquare}
               onPress={handleSeeAllTransactions}
             >
@@ -599,10 +562,10 @@ export default function Home() {
                   const progressPercentage = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
                   const isCompleted = goal.currentAmount >= goal.targetAmount;
                   const imageUrl = getGoalImageUrl(goal);
-                  
+
                   return (
-                    <TouchableOpacity 
-                      key={goal.id} 
+                    <TouchableOpacity
+                      key={goal.id}
                       style={[styles.goalCard, isCompleted && styles.completedGoalCard]}
                       onPress={() => router.push({ pathname: '/screens/GoalDetailScreen', params: { goalId: goal.id } })}
                     >
@@ -622,10 +585,10 @@ export default function Home() {
                       )}
                       <View style={styles.goalHeader}>
                         <View style={styles.goalPriorityContainer}>
-                          <Ionicons 
-                            name={getPriorityIcon(goal.priority)} 
-                            size={14} 
-                            color={getPriorityColor(goal.priority)} 
+                          <Ionicons
+                            name={getPriorityIcon(goal.priority)}
+                            size={14}
+                            color={getPriorityColor(goal.priority)}
                           />
                           <Text style={[styles.goalPriority, { color: getPriorityColor(goal.priority) }]}>
                             {goal.priority}
@@ -637,44 +600,44 @@ export default function Home() {
                           </View>
                         )}
                       </View>
-                      
+
                       <Text style={styles.goalTitle} numberOfLines={2}>{goal.name}</Text>
                       {goal.description && (
                         <Text style={styles.goalDescription} numberOfLines={2}>{goal.description}</Text>
                       )}
-                      
+
                       <Text style={[styles.goalAmount, isCompleted && styles.completedAmount]}>
                         {formatCurrency(goal.currentAmount)}
                       </Text>
-                      
+
                       <View style={styles.goalProgressContainer}>
                         <View style={styles.goalProgressTrack}>
-                          <View 
+                          <View
                             style={[
-                              styles.goalProgress, 
-                              { 
+                              styles.goalProgress,
+                              {
                                 width: `${progressPercentage}%`,
                                 backgroundColor: isCompleted ? '#4CAF50' : '#5E35B1'
                               }
-                            ]} 
+                            ]}
                           />
                         </View>
                       </View>
-                      
+
                       <View style={styles.goalFooter}>
                         <Text style={[styles.goalPercentage, isCompleted && styles.completedText]}>
                           {progressPercentage.toFixed(0)}% of {formatCurrency(goal.targetAmount)}
                         </Text>
                         {goal.targetDate && (
                           <Text style={styles.goalDate}>
-                            {new Date(goal.targetDate).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric' 
+                            {new Date(goal.targetDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric'
                             })}
                           </Text>
                         )}
                       </View>
-                      
+
                       <Text style={styles.goalCategory}>{goal.category}</Text>
                     </TouchableOpacity>
                   );
@@ -688,7 +651,7 @@ export default function Home() {
               )}
             </ScrollView>
           </View>
-          
+
           {/* Recent Transactions */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
@@ -704,9 +667,9 @@ export default function Home() {
             {renderTransactions()}
           </View>
         </ScrollView>
-        
+
         {/* Floating Add Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.floatingButton}
           onPress={() => setIsAddTransactionVisible(true)}
         >
@@ -733,19 +696,20 @@ export default function Home() {
           onSuccess={fetchAllData}
         />
 
-<TopUpModal
-  visible={modalVisible}
-  onClose={() => setModalVisible(false)}
-  goal={
-    params?.goalId 
-      ? savingGoals.find(g => g.id === Number(params.goalId)) || {} as SavingGoal
-      : {} as SavingGoal
-  }
-  onSuccess={() => {
-    setModalVisible(false);
-    fetchAllData();
-  }}
-/>
+        {modalVisible && params?.goalId && (
+          <TopUpModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            goal={(() => {
+              const foundGoal = savingGoals.find(g => g.id === Number(params.goalId));
+              return foundGoal ? { id: foundGoal.id!, name: foundGoal.name } : { id: 0, name: 'Unknown Goal' };
+            })()}
+            onSuccess={() => {
+              setModalVisible(false);
+              fetchAllData();
+            }}
+          />
+        )}
       </SafeAreaView>
     </NotificationProvider>
   );
@@ -1115,5 +1079,3 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
-
-export default Home;

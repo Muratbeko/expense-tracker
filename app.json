@@ -5,6 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "scheme": "expensetracker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -74,7 +79,8 @@
         {
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to select receipts."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "notification": {
       "icon": "./assets/notification-icon.png",

@@ -1,19 +1,35 @@
-import apiService from '@/services/api';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import axios from 'axios';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { apiClient } from '../../api';
+import { GOOGLE_CONFIG } from '../../constants';
 
-const GOOGLE_SPEECH_API_KEY = 'AIzaSyCrb5mXO0QP0KII3Fh7D42Tqs_Vph9SD0g';
-const GEMINI_API_KEY = 'AIzaSyCrb5mXO0QP0KII3Fh7D42Tqs_Vph9SD0g';
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string;
+      }>;
+    };
+  }>;
+}
 
-const askGemini = async (text: string) => {
+interface TransactionData {
+  amount: number;
+  currency: string;
+  category: string;
+  description: string;
+  type: 'INCOME' | 'EXPENSE';
+  date: string;
+}
+
+const askGemini = async (text: string): Promise<TransactionData> => {
   const prompt = `Extract transaction details from: "${text}".\nReturn JSON with fields: amount, currency, category, description, type (INCOME or EXPENSE), date (ISO).\nExample: {"amount":14,"currency":"USD","category":"Groceries","description":"Grocery shopping","type":"EXPENSE","date":"2024-06-07"}`;
-  const response = await axios.post(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY,
+  const response = await apiClient.post<GeminiResponse>(
+    `${GOOGLE_CONFIG.GEMINI_API_URL}?key=${GOOGLE_CONFIG.GEMINI_API_KEY}`,
     {
       contents: [{ parts: [{ text: prompt }] }]
     }
@@ -26,7 +42,7 @@ const askGemini = async (text: string) => {
   throw new Error('Could not parse Gemini response');
 };
 
-const recognizeSpeechFromAudio = async (uri: string) => {
+const recognizeSpeechFromAudio = async (uri: string): Promise<string> => {
   // Read file as base64
   const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
   const body = {
@@ -39,12 +55,22 @@ const recognizeSpeechFromAudio = async (uri: string) => {
       content: base64,
     },
   };
-  const response = await axios.post(
-    `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_SPEECH_API_KEY}`,
+  
+  interface SpeechResponse {
+    results?: Array<{
+      alternatives?: Array<{
+        transcript?: string;
+      }>;
+    }>;
+  }
+  
+  const response = await apiClient.post<SpeechResponse>(
+    `${GOOGLE_CONFIG.SPEECH_API_URL}?key=${GOOGLE_CONFIG.SPEECH_API_KEY}`,
     body,
     { headers: { 'Content-Type': 'application/json' } }
   );
-  const data = response.data as any;
+  
+  const data = response.data;
   const alternatives = data.results?.[0]?.alternatives;
   if (alternatives && alternatives[0]?.transcript) {
     return alternatives[0].transcript;
@@ -56,7 +82,7 @@ export default function VoiceTransactionScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [recognizedText, setRecognizedText] = useState('');
-  const [transaction, setTransaction] = useState<any>(null);
+  const [transaction, setTransaction] = useState<TransactionData | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -130,13 +156,13 @@ export default function VoiceTransactionScreen() {
     setSaving(true);
     setStatus('saving');
     try {
-      await apiService.createTransaction({
+      await apiClient.post('/transactions', {
         type: transaction.type || 'EXPENSE',
         amount: transaction.amount,
         description: transaction.description,
         category: transaction.category,
         date: transaction.date || new Date().toISOString(),
-        walletId: '1',
+        walletId: 1, // Changed from string to number to fix type error
       });
       Alert.alert('Success', 'Transaction added!');
       router.back();

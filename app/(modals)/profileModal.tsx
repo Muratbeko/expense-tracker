@@ -10,6 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { Alert, Platform, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
+import { apiClient } from '../config/api'
+import { API_CONFIG } from '../config/constants'
 
 const ProfileModal = () => {
   const { user, updateProfile } = useAuth()
@@ -27,7 +29,7 @@ const ProfileModal = () => {
   
   useEffect(() => {
     if (user?.imageUrl) {
-      const fullImageUrl = `http://localhost:8080/images/view/${user.imageUrl}`
+      const fullImageUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.IMAGES}/view/${user.imageUrl}`
       console.log('Setting image with URL:', fullImageUrl)
       setImage({ uri: fullImageUrl })
     }
@@ -80,9 +82,7 @@ const ProfileModal = () => {
     } as any)
 
     try {
-      const response = await fetch('http://localhost:8080/images/upload', {
-        method: 'POST',
-        body: formData,
+      const response = await apiClient.post<string>(`${API_CONFIG.ENDPOINTS.IMAGES}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -90,22 +90,18 @@ const ProfileModal = () => {
 
       console.log('Upload response status:', response.status)
       
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Upload error response:', errorText)
-        throw new Error(`Upload failed: ${response.status}`)
-      }
-
-      const responseText = await response.text()
+      const responseText = response.data
       console.log('Upload response:', responseText)
       
-      const filenameMatch = responseText.match(/успешно: (.+)$/)
-      if (filenameMatch && filenameMatch[1]) {
-        console.log('Extracted filename:', filenameMatch[1])
-        return filenameMatch[1]
+      if (typeof responseText === 'string') {
+        const filenameMatch = responseText.match(/успешно: (.+)$/)
+        if (filenameMatch && filenameMatch[1]) {
+          console.log('Extracted filename:', filenameMatch[1])
+          return filenameMatch[1]
+        }
       }
       throw new Error('Could not extract filename from response')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error)
       throw error
     }
@@ -122,7 +118,7 @@ const ProfileModal = () => {
       let imageUrl = user?.imageUrl || ''
 
       // Проверяем, изменилось ли изображение
-      const currentImageUri = user?.imageUrl ? `http://localhost:8080/images/view/${user.imageUrl}` : null
+      const currentImageUri = user?.imageUrl ? `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.IMAGES}/view/${user.imageUrl}` : null
       const hasNewImage = image && image.uri !== currentImageUri
 
       console.log('Current image URI:', currentImageUri)
@@ -131,7 +127,7 @@ const ProfileModal = () => {
 
       if (hasNewImage) {
         console.log('Uploading new image...')
-        imageUrl = await uploadImage()
+        imageUrl = await uploadImage() || ''
         console.log('New image URL:', imageUrl)
       }
 
@@ -141,25 +137,11 @@ const ProfileModal = () => {
         imageUrl,
       })
 
-      const response = await fetch('http://localhost:8080/api/users/me/update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: user?.email,
-          name: name.trim(),
-          imageUrl,
-        }),
+      await apiClient.put(`${API_CONFIG.ENDPOINTS.USERS}/me/update`, {
+        email: user?.email,
+        name: name.trim(),
+        imageUrl,
       })
-
-      console.log('Update profile response status:', response.status)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Update profile error:', errorText)
-        throw new Error(`Failed to update profile: ${response.status}`)
-      }
 
       // Обновляем профиль в контексте
       await updateProfile(user?.email || '')
@@ -167,9 +149,9 @@ const ProfileModal = () => {
       Alert.alert('Success', 'Profile updated successfully!', [
         { text: 'OK', onPress: () => router.back() }
       ])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error)
-      Alert.alert('Error', `Failed to update profile: ${error.message}`)
+      Alert.alert('Error', `Failed to update profile: ${error.message || 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
@@ -437,7 +419,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   saveButtonGradient: {
-    paddingVertical: spacingY._18,
+    paddingVertical: spacingY._20,
     alignItems: 'center',
     justifyContent: 'center',
   },

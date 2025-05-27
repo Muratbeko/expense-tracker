@@ -1,7 +1,6 @@
 // app/(modals)/AddTransactionModalProps.tsx
 import Typo from '@/components/Typo';
 import { colors } from '@/constants/theme';
-import apiService, { Category } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,6 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import apiService from '../services/api';
+import { Category } from '../types/index';
 
 interface AddTransactionModalProps {
   visible: boolean;

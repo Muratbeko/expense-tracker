@@ -1,4 +1,4 @@
-import apiService from '@/services/api';
+import apiService from '@/app/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -29,14 +29,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const email = await AsyncStorage.getItem('userEmail');
-      
+
       console.log('Loading user - Email:', email || 'Not found');
-      
+
       if (email) {
         try {
-        const userData = await apiService.getProfile(email);
+          const userData = await apiService.getProfile(email);
           console.log('User data loaded:', userData);
-        setUser(userData);
+          setUser(userData);
         } catch (error) {
           console.error('Error loading user profile:', error);
           await AsyncStorage.removeItem('userEmail');
@@ -57,13 +57,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       console.log('AuthContext: Starting login process');
-      
+
       const userData = await apiService.login(email, password);
       console.log('AuthContext: Login successful, saving data');
-      
+
       await AsyncStorage.setItem('userEmail', email);
       setUser(userData);
-      
+
       console.log('AuthContext: User set, login complete');
     } catch (error) {
       console.error('AuthContext: Login error:', error);
@@ -77,13 +77,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       console.log('AuthContext: Starting registration process');
-      
+
       const userData = await apiService.register(name, email, password);
       console.log('AuthContext: Registration successful, saving data');
-      
+
       await AsyncStorage.setItem('userEmail', email);
       setUser(userData);
-      
+
       console.log('AuthContext: User set, registration complete');
     } catch (error) {
       console.error('AuthContext: Registration error:', error);
@@ -97,16 +97,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       console.log('AuthContext: Starting logout process');
-      
+
       try {
         await apiService.logout();
       } catch (error) {
         console.warn('Server logout failed, continuing with local logout');
       }
-      
+
       await AsyncStorage.removeItem('userEmail');
       setUser(null);
-      
+
       console.log('AuthContext: Logout complete, redirecting');
       router.replace("/(auth)/login");
     } catch (error) {
@@ -128,13 +128,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      login, 
-      register, 
-      logout, 
-      updateProfile 
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      updateProfile
     }}>
       {children}
     </AuthContext.Provider>

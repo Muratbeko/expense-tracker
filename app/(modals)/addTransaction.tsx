@@ -2,10 +2,10 @@ import Input from '@/components/input'
 import ScreenWrapper from '@/components/ScreenWrapper'
 import Typo from '@/components/Typo'
 import { colors, radius, spacingX, spacingY } from '@/constants/theme'
-import apiService from '@/services/api'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native'
+import apiService from '../services/api'
 
 const AddTransaction = () => {
   const router = useRouter()

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../services/api';
 import type { MonthlyReport } from '../../types/index';
 
@@ -53,7 +53,8 @@ export default function MonthlyReportScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
       <View style={styles.header}>
         <Text style={styles.title}>Monthly Report</Text>
         <TouchableOpacity 
@@ -94,33 +95,47 @@ export default function MonthlyReportScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Category Breakdown</Text>
-            {report.categoryBreakdown.map((item: { category: string; amount: number; percentage: number }, index: number) => (
+            {Array.isArray(report.categoryBreakdown) && report.categoryBreakdown.length > 0 ? (
+              report.categoryBreakdown.map((item: { category: string | { id: number; name: string; icon?: string; color?: string; type?: string }; amount: number; percentage: number }, index: number) => (
               <View key={index} style={styles.categoryItem}>
                 <View style={styles.categoryHeader}>
-                  <Text style={styles.categoryName}>{item.category}</Text>
-                  <Text style={styles.categoryPercentage}>{item.percentage}%</Text>
+                  <Text style={styles.categoryName}>
+                    {typeof item.category === 'object' && item.category !== null
+                      ? (item.category as any).name || 'Unknown Category'
+                      : String(item.category)}
+                  </Text>
+                  <Text style={styles.categoryPercentage}>
+                    {isNaN(item.percentage) ? '0' : Math.round(item.percentage)}%
+                  </Text>
                 </View>
                 <View style={styles.progressBar}>
                   <View 
                     style={[
                       styles.progressFill,
-                      { width: `${item.percentage}%` }
+                      { width: `${isNaN(item.percentage) ? 0 : Math.min(Math.round(item.percentage), 100)}%` }
                     ]} 
                   />
                 </View>
                 <Text style={styles.categoryAmount}>{formatCurrency(item.amount)}</Text>
               </View>
-            ))}
+              ))
+            ) : (
+              <Text style={styles.emptyStateText}>No category data available</Text>
+            )}
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Recommendations</Text>
-            {report.recommendations.map((recommendation: string, index: number) => (
-              <View key={index} style={styles.recommendationItem}>
-                <Ionicons name="bulb-outline" size={20} color="#5E35B1" />
-                <Text style={styles.recommendationText}>{recommendation}</Text>
-              </View>
-            ))}
+            {Array.isArray(report.recommendations) && report.recommendations.length > 0 ? (
+              report.recommendations.map((recommendation: string, index: number) => (
+                <View key={index} style={styles.recommendationItem}>
+                  <Ionicons name="bulb-outline" size={20} color="#5E35B1" />
+                  <Text style={styles.recommendationText}>{recommendation}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyStateText}>No recommendations available</Text>
+            )}
           </View>
         </View>
       ) : (
@@ -132,7 +147,8 @@ export default function MonthlyReportScreen() {
           </Text>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

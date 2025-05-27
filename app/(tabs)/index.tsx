@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image } from 'react-native';
+import { Image, RefreshControl } from 'react-native';
 
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import {
@@ -71,6 +71,7 @@ export default function Home() {
   const [isAddTransactionVisible, setIsAddTransactionVisible] = useState(false);
   const [isAddGoalVisible, setIsAddGoalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -100,15 +101,50 @@ export default function Home() {
       }
 
       // Fetch all data in parallel
-      const [transactions, budget, goals] = await Promise.all([
+      const [transactionsRes, budgetRes, goalsRes, accountBalanceRes] = await Promise.all([
         apiClient.get(API_CONFIG.ENDPOINTS.TRANSACTIONS),
         apiClient.get(API_CONFIG.ENDPOINTS.BUDGETS + '/current'),
-        apiClient.get(API_CONFIG.ENDPOINTS.GOALS)
+        apiClient.get(API_CONFIG.ENDPOINTS.GOALS),
+        apiClient.get(API_CONFIG.ENDPOINTS.ACCOUNTS + '/balance')
       ]);
 
-      setTransactions(transactions.data as TransactionType[]);
-      setBudget(budget.data as Budget);
-      setSavingGoals(goals.data as SavingGoal[]);
+      // Process transactions data
+      if (Array.isArray(transactionsRes.data)) {
+        const allTxns = transactionsRes.data.map((tx: any) => {
+          const categoryName = tx.category?.name || 'Uncategorized';
+          return {
+            id: tx.id,
+            type: tx.type,
+            amount: tx.amount,
+            description: tx.description,
+            category: categoryName,
+            date: tx.date,
+            walletId: tx.wallet?.id
+          };
+        });
+
+        const sortedTransactions = allTxns.sort((a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        setAllTransactions(sortedTransactions);
+        setTransactions(sortedTransactions.slice(0, 5));
+      } else {
+        setTransactions([]);
+        setAllTransactions([]);
+      }
+
+      // Set budget data
+      setBudget(budgetRes.data as Budget);
+      
+      // Set saving goals data
+      setSavingGoals(goalsRes.data as SavingGoal[] || []);
+
+      // Set account balance data
+      const balanceData = accountBalanceRes.data as { balance: number; income: number; expenses: number };
+      setBalance(balanceData.balance || 0);
+      setIncome(balanceData.income || 0);
+      setExpenses(balanceData.expenses || 0);
 
       console.log('All data fetched successfully');
     } catch (error) {
@@ -118,36 +154,26 @@ export default function Home() {
         await AsyncStorage.removeItem('userEmail');
         router.replace('/(auth)/login');
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAccountBalance = async () => {
-    try {
-      const response = await apiClient.get(API_CONFIG.ENDPOINTS.ACCOUNTS + '/balance');
-      const data = response.data as { balance: number; income: number; expenses: number };
-      setBalance(data.balance || 0);
-      setIncome(data.income || 0);
-      setExpenses(data.expenses || 0);
-    } catch (error) {
-      console.error('Error fetching account balance:', error);
-      // Set default values instead of throwing
+      // Set default values on error
       setBalance(0);
       setIncome(0);
       setExpenses(0);
+      setBudget(null);
+      setSavingGoals([]);
+      setTransactions([]);
+      setAllTransactions([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const fetchBudget = async () => {
-    try {
-      const response = await apiClient.get(API_CONFIG.ENDPOINTS.BUDGETS + '/current');
-      setBudget(response.data as Budget);
-    } catch (error) {
-      console.error('Error fetching budget:', error);
-      setBudget(null);
-    }
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchAllData();
   };
+
+  // Individual fetch functions are now integrated into fetchAllData for better efficiency
 
   const createDefaultBudget = async () => {
     try {
@@ -158,66 +184,16 @@ export default function Home() {
         total: 1000,
         spent: 0
       });
-      setBudget(response.data as Budget);
       Alert.alert('Success', 'Budget created! You can now edit it.');
+      // Refresh all data to show the new budget
+      await fetchAllData();
     } catch (error) {
       console.error('Error creating budget:', error);
       Alert.alert('Error', 'Failed to create budget. Please try again.');
     }
   };
 
-  const fetchSavingGoals = async () => {
-    try {
-      const response = await apiClient.get(API_CONFIG.ENDPOINTS.GOALS);
-      setSavingGoals(response.data as SavingGoal[] || []);
-    } catch (error) {
-      console.error('Error fetching saving goals:', error);
-      setSavingGoals([]);
-    }
-  };
-
-  const fetchTransactions = async () => {
-    try {
-      console.log('Fetching transactions...');
-      const response = await apiClient.get(API_CONFIG.ENDPOINTS.TRANSACTIONS);
-
-      if (!Array.isArray(response.data)) {
-        console.error('Invalid transactions data format:', response.data);
-        setTransactions([]);
-        setAllTransactions([]);
-        return;
-      }
-
-      // Преобразуем данные в нужный формат, избегая циклических ссылок
-      const allTxns = response.data.map((tx: any) => {
-        // Извлекаем только нужные данные из категории
-        const categoryName = tx.category?.name || 'Uncategorized';
-
-        return {
-          id: tx.id,
-          type: tx.type,
-          amount: tx.amount,
-          description: tx.description,
-          category: categoryName,
-          date: tx.date,
-          walletId: tx.wallet?.id
-        };
-      });
-
-      // Sort transactions by date (newest first)
-      const sortedTransactions = allTxns.sort((a, b) =>
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-
-      console.log('Processed transactions:', sortedTransactions);
-      setAllTransactions(sortedTransactions);
-      setTransactions(sortedTransactions.slice(0, 5)); // Show only 5 recent
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      setTransactions([]);
-      setAllTransactions([]);
-    }
-  };
+  // fetchSavingGoals and fetchTransactions are now integrated into fetchAllData for better efficiency
 
   const handleEditBudget = () => {
     if (!budget) {
@@ -246,6 +222,8 @@ export default function Home() {
       setBudget(response.data as Budget);
       setIsEditModalVisible(false);
       Alert.alert('Success', 'Budget updated successfully');
+      // Refresh all data to ensure consistency
+      await fetchAllData();
     } catch (error) {
       console.error('Error updating budget:', error);
       Alert.alert('Error', 'Failed to update budget. Please try again.');
@@ -271,9 +249,10 @@ export default function Home() {
       };
 
       const response = await apiClient.post(API_CONFIG.ENDPOINTS.GOALS, payload);
-      setSavingGoals([...savingGoals, response.data as SavingGoal]);
       setIsAddGoalVisible(false);
       Alert.alert('Success', 'Goal added successfully!');
+      // Refresh all data to get the latest goals list
+      await fetchAllData();
     } catch (error) {
       console.error('Error adding goal:', error);
       Alert.alert('Error', 'Failed to add goal. Please try again.');
@@ -290,10 +269,9 @@ export default function Home() {
       const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.GOALS}/${goalId}`, {
         currentAmount: newAmount
       });
-      setSavingGoals(savingGoals.map((goal): SavingGoal =>
-        goal.id === goalId ? response.data as SavingGoal : goal
-      ));
       Alert.alert('Success', 'Goal updated successfully');
+      // Refresh all data to ensure consistency
+      await fetchAllData();
     } catch (error) {
       console.error('Error updating goal:', error);
       Alert.alert('Error', 'Failed to update goal. Please try again.');
@@ -303,8 +281,9 @@ export default function Home() {
   const deleteGoal = async (goalId: number) => {
     try {
       await apiClient.delete(`${API_CONFIG.ENDPOINTS.GOALS}/${goalId}`);
-      setSavingGoals(savingGoals.filter(goal => goal.id !== goalId));
       Alert.alert('Success', 'Goal deleted successfully');
+      // Refresh all data to ensure the goal is removed from the UI
+      await fetchAllData();
     } catch (error) {
       console.error('Error deleting goal:', error);
       Alert.alert('Error', 'Failed to delete goal. Please try again.');
@@ -355,11 +334,17 @@ export default function Home() {
   };
 
   const handleSeeAllTransactions = () => {
-    router.push('/screens/TransactionsScreen');
+    // Refresh data before navigating to ensure consistency
+    fetchAllData().then(() => {
+      router.push('/screens/TransactionsScreen');
+    });
   };
 
   const handleSeeAllGoals = () => {
-    router.push('/screens/SavingGoalScreen');
+    // Refresh data before navigating to ensure consistency
+    fetchAllData().then(() => {
+      router.push('/screens/SavingGoalScreen');
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -441,24 +426,33 @@ export default function Home() {
 
   function renderBudget() {
     if (budget) {
-      <>
-        <Text style={styles.budgetText}>
-          Budget: ${budget.total} | Spent: ${budget.spent}
-        </Text>
-        <View style={styles.progressContainer}>
-          <View
-            style={[
-              styles.progressBar,
-              { width: `${Math.min((budget.spent / budget.total) * 100, 100)}%`, backgroundColor: '#5E35B1' }
-            ]}
-          />
-        </View>
-        <Text style={styles.percentageText}>
-          {Math.round((budget.spent / budget.total) * 100)}% used
-        </Text>
-      </>
+      return (
+        <>
+          <Text style={styles.budgetText}>
+            Budget: ${budget.total} | Spent: ${budget.spent}
+          </Text>
+          <View style={styles.progressContainer}>
+            <View
+              style={[
+                styles.progressBar,
+                { width: `${Math.min((budget.spent / budget.total) * 100, 100)}%`, backgroundColor: '#5E35B1' }
+              ]}
+            />
+          </View>
+          <Text style={styles.percentageText}>
+            {Math.round((budget.spent / budget.total) * 100)}% used
+          </Text>
+        </>
+      );
     } else {
-      return <Text style={styles.budgetText}>No budget set</Text>;
+      return (
+        <View>
+          <Text style={styles.budgetText}>No budget set</Text>
+          <TouchableOpacity style={styles.createBudgetButton} onPress={createDefaultBudget}>
+            <Text style={styles.createBudgetText}>Create Budget</Text>
+          </TouchableOpacity>
+        </View>
+      );
     }
   }
 
@@ -466,7 +460,12 @@ export default function Home() {
     <NotificationProvider>
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {error && (
             <View style={styles.errorBanner}>
               <Text style={styles.errorBannerText}>{error}</Text>
@@ -697,19 +696,20 @@ export default function Home() {
           onSuccess={fetchAllData}
         />
 
-        <TopUpModal
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          goal={
-            params?.goalId
-              ? savingGoals.find(g => g.id === Number(params.goalId)) || {} as SavingGoal
-              : {} as SavingGoal
-          }
-          onSuccess={() => {
-            setModalVisible(false);
-            fetchAllData();
-          }}
-        />
+        {modalVisible && params?.goalId && (
+          <TopUpModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            goal={(() => {
+              const foundGoal = savingGoals.find(g => g.id === Number(params.goalId));
+              return foundGoal ? { id: foundGoal.id!, name: foundGoal.name } : { id: 0, name: 'Unknown Goal' };
+            })()}
+            onSuccess={() => {
+              setModalVisible(false);
+              fetchAllData();
+            }}
+          />
+        )}
       </SafeAreaView>
     </NotificationProvider>
   );

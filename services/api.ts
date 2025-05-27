@@ -531,14 +531,18 @@ class ApiService {
       monthlyTransactions
         .filter(txn => txn.type === 'EXPENSE' && txn.category)
         .forEach(txn => {
-          const current = categoryTotals.get(txn.category as string) || 0;
-          categoryTotals.set(txn.category as string, current + txn.amount);
+          // Handle both string and object categories
+          const categoryName = typeof txn.category === 'object' && txn.category !== null
+            ? (txn.category as any).name || 'Unknown Category'
+            : String(txn.category);
+          const current = categoryTotals.get(categoryName) || 0;
+          categoryTotals.set(categoryName, current + txn.amount);
         });
 
       const categoryBreakdown = Array.from(categoryTotals.entries()).map(([category, amount]) => ({
         category,
         amount,
-        percentage: (amount / totalExpenses) * 100
+        percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
       }));
 
       // Generate recommendations based on spending patterns

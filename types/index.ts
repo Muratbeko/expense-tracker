@@ -275,7 +275,7 @@ export interface MonthlyReport {
   totalExpenses: number;
   totalIncome: number;
   categoryBreakdown: {
-    category: string;
+    category: string | { id: number; name: string; icon?: string; color?: string; type?: string };
     amount: number;
     percentage: number;
   }[];
